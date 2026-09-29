@@ -1,0 +1,21 @@
+name: LCA_env_v1
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+  - r
+dependencies:
+  - r-base
+  - jags
+  - r-rjags
+  - r-rmarkdown
+  - r-ggplot2
+  - r-r2jags
+  - python=3.11
+  - r-label.switching
+  - r-coda
+  - r-optparse
+  - r-tidyverse
+  - r-testthat
+  - r-treemapify
+  - r-config

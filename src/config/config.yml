@@ -1,0 +1,17 @@
+default:
+  
+  JAGS_DATA:
+    seed: NULL
+    chains: 4
+    iterations: 500
+    burn_in: 100
+    thin: 1
+    save_parameters:
+      - "pi"
+      - "p"
+      - "eta"
+  DATA_META:
+    id_column_index: 1
+    training_column_index: 2
+    class_column_prefix: "CL_"
+    feature_column_prefix: "FE_"

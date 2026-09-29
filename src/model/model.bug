@@ -1,0 +1,30 @@
+model{
+  for (i in 1:N){
+    for (k in 1:K){
+      Y[i,k] ~ dbern(p[eta[i],k])
+    }
+    eta[i] ~ dcat(pi[1:M_fit])
+  }
+  
+  # --- Prior for Class Proportions (pi) using Softmax ---
+  
+  # 1. Calculate exponential of 'a' element-wise 
+  for (j in 1:M_fit){
+    a[j] ~ dnorm(0, 4/9)
+    exp_a[j] <- exp(a[j])
+  }
+  
+  # 2. Sum the exponentials (Scalar sum of the vector)
+  sum_exp_a <- sum(exp_a[1:M_fit])
+  
+  # 3. Calculate pi and define Feature Probabilities
+  for (j in 1:M_fit){
+    pi[j] <- exp_a[j] / sum_exp_a
+    
+    # Feature probabilities (Logistic transformation)
+    for (k in 1:K){
+      p[j,k] <- 1/(1+exp(-g[j,k]))
+      g[j,k] ~ dnorm(0, 4/9)
+    }
+  }
+}
