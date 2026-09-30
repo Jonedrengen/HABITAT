@@ -1,5 +1,5 @@
 
-log_info <- function(message = "no message provided",
+write_log <- function(message = "no message provided",
                      level = "INFO",
                      log_file = NULL) {
     time <- Sys.time()
@@ -10,5 +10,5 @@ log_info <- function(message = "no message provided",
         }
         cat(sprintf("[%s] [%s] %s\n", level, time, message), file = log_file, append = TRUE)
     }
-  print(sprintf("[%s] [%s] %s", level, time, message))
+  #print(sprintf("[%s] [%s] %s", level, time, message))
 }

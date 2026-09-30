@@ -1,5 +1,4 @@
 default:
-  
   JAGS_DATA:
     seed: NULL
     chains: 4
