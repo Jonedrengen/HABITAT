@@ -1,12 +1,13 @@
-write_output_structure <- function(output_dir, sub_dirs) {
-    if (!dir.exists(output_dir)) {
-        dir.create(output_dir, recursive = TRUE)
+write_output_structure <- function(output_dir) {
+    paths <- list(
+        root = output_dir,
+        logs = file.path(output_dir, "logs"),
+        results = file.path(output_dir, "results"),
+        temp = file.path(output_dir, "temp")
+    )
+
+    for (path in paths) {
+        dir.create(path, recursive = TRUE, showWarnings = FALSE)
     }
-    for (sub_dir in sub_dirs) {
-        dir_path <- file.path(output_dir, sub_dir)
-        if (!dir.exists(dir_path)) {
-            dir.create(dir_path, recursive = TRUE)
-        }
-    }
-    return(output_dir)
+    return(paths)
 }

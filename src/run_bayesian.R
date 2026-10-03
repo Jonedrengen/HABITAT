@@ -20,11 +20,14 @@ root <- get_root(argv)
 source(file.path(root, "utils", "logging.R"))
 source(file.path(root, "utils", "config_utils.R"))
 source(file.path(root, "utils", "write_output_dirs.R"))
-source(file.path(root, "utils", "data_reader.R"))
+source(file.path(root, "blcm", "data_reader.R"))
+source(file.path(root, "blcm", "jags_data.R"))
+source(file.path(root, "blcm", "run_model.R"))
 write_log(sprintf("Root directory: %s", root))
 
-
-#parse input and define options
+########################################################################################
+####### define command line options, parse arguments and define Global variables #######
+########################################################################################
 option_list <- list(
     make_option(c("--input", "-i"), type = "character", metavar = "FILE_PATH", help = "Path to input file (.csv)"),
     make_option(c("--output", "-o"), type = "character", metavar = "DIR_PATH", help = "Path to output directory"),
@@ -33,14 +36,13 @@ option_list <- list(
 parser <- OptionParser(usage = "Usage: %prog [options]", option_list = option_list)
 args <- parse_args(parser, args = commandArgs(trailingOnly = TRUE), print_help_and_exit = TRUE, positional_arguments = FALSE, convert_hyphens_to_underscores = FALSE)
 input_file <- args$input
-output_dir <- args$output
 config_file <- args$config
-log_file <- file.path(args$output, "logs", "blcm.log")
 
 #create output structure
-output_sub_dirs <- c("logs", "results", "temp")
-output_dir <- write_output_structure(args$output, output_sub_dirs)
-write_log(sprintf("Outputs: %s", output_dir), log_file = log_file)
+output_dirs <- write_output_structure(args$output)
+log_file <- file.path(output_dirs$logs, "blcm.log")
+model_file <- file.path(root, "model", "model.bug")
+write_log(sprintf("Outputs: %s", output_dirs$root), log_file = log_file)
 
 #read config
 config <- read_config(config_file)
@@ -50,7 +52,22 @@ write_log(sprintf("JAGS_DATA: %s", paste(names(config$JAGS_DATA),":", config$JAG
 write_log(sprintf("DATA_META: %s", paste(names(config$DATA_META),":", config$DATA_META)), log_file = log_file)
 write_log(sprintf("id_column_index: %s", config$DATA_META$id_column_index), log_file = log_file)
 
-#read and validate data
+##########################################
+######## Start Bayesian analysis #########
+##########################################
+
+#read and validate input data
 raw_input_data <- read_data(input_file)
 write_log(sprintf("Input data dimensions: %s", paste(dim(raw_input_data), collapse = " x ")), log_file = log_file)
 input_data <- validate_data(raw_input_data, config, log_file = log_file)
+
+#handle JAGS data assembly
+jags_parameters <- assemble_jags_data(input_data,
+                                      id_column_index = config$DATA_META$id_column_index,
+                                      training_column_index = config$DATA_META$training_column_index,
+                                      class_column_prefix = config$DATA_META$class_column_prefix,
+                                      feature_column_prefix = config$DATA_META$feature_column_prefix,
+                                      temp_dir = output_dirs$temp,
+                                      log_file = log_file)
+
+raw_model_output <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, log_file = log_file)

@@ -25,6 +25,7 @@ validate_class_columns <- function(raw_input_data, class_column_prefix, log_file
         write_log(paste0("No class columns found. (Expected prefix: ", class_column_prefix, ")"), level = "ERROR", log_file = log_file)
         stop("No class columns found.")
     }
+    
 
     class_columns <- raw_input_data[, class_col_names, drop = FALSE]
     for (class_col in class_columns) {
