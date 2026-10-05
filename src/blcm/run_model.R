@@ -1,4 +1,6 @@
-run_model <- function(jags_parameters, config, model_file, log_file = NULL, output_mcmc_obj = TRUE) {
+run_model <- function(jags_parameters, config, model_file, log_file = NULL, temp_dir = NULL) {
+    #outputs results in a list of objects
+    
     write_log(sprintf("Running model with file: %s", model_file), log_file = log_file)
     #init function for chains
     in_init <- function(M_fit=jags_parameters$M_fit) {
@@ -17,11 +19,28 @@ run_model <- function(jags_parameters, config, model_file, log_file = NULL, outp
                                DIC                = FALSE)
     model_output_size <- format(object.size(raw_model_output), units = "Mb")
     write_log(paste("model finished with size:", model_output_size), log_file = log_file)
-    if (output_mcmc_obj) {
-        out <- as.mcmc(raw_model_output)
-        return(out)
+    
+    model_results <- list(
+                            raw_model_output = raw_model_output,
+                            bugs_summary_table = raw_model_output$BUGSoutput$summary,
+                            pi_samples = raw_model_output$BUGSoutput$sims.list$pi,      # n_iter x M_fit
+                            p_samples = raw_model_output$BUGSoutput$sims.list$p,        # n_iter x M_fit x K
+                            eta_samples = raw_model_output$BUGSoutput$sims.list$eta,    # n_iter x N
+                            mcmc_object = coda::as.mcmc(raw_model_output)
+                        )
+    if (!is.null(temp_dir)) {
+        write_csv(model_results$bugs_summary_table, include_row_names = TRUE, file_path = file.path(temp_dir, "bugs_summary_table.csv"))
     }
-    return(raw_model_output)
+    write_log(paste0("Model results: ", names(model_results)), log_file = log_file)
+    return(model_results)
 }
 
+#by Daniel Park (both)
 #chain histories
+plot_results <- function(expression = "", mcmc_object) {
+    plot(mcmc_object[, grep(expression, coda::varnames(mcmc_object))])
+}
+#retrieve specific parameter samples from coda object
+get_res   <- function(expression = "", mcmc_object) {
+    mcmc_object[,grep(expression, varnames(mcmc_object))]
+}

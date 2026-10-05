@@ -1,7 +1,7 @@
 default:
   JAGS_DATA:
     seed: NULL
-    chains: 4
+    chains: 3
     iterations: 500
     burn_in: 100
     thin: 1

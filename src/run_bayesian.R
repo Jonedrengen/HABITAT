@@ -23,6 +23,7 @@ source(file.path(root, "utils", "write_output_dirs.R"))
 source(file.path(root, "blcm", "data_reader.R"))
 source(file.path(root, "blcm", "jags_data.R"))
 source(file.path(root, "blcm", "run_model.R"))
+source(file.path(root, "blcm", "post_run_analysis.R"))
 write_log(sprintf("Root directory: %s", root))
 
 ########################################################################################
@@ -60,6 +61,11 @@ write_log(sprintf("id_column_index: %s", config$DATA_META$id_column_index), log_
 raw_input_data <- read_data(input_file)
 write_log(sprintf("Input data dimensions: %s", paste(dim(raw_input_data), collapse = " x ")), log_file = log_file)
 input_data <- validate_data(raw_input_data, config, log_file = log_file)
+training_ids <- which(input_data[, config$DATA_META$training_column_index] == 1)
+write_log(sprintf("Number of training samples: %s", length(training_ids)), log_file = log_file)
+write_log(sprintf("Training IDs: %s", head(training_ids)), log_file = log_file)
+test_ids <- which(input_data[, config$DATA_META$training_column_index] == 0)
+write_log(sprintf("Number of test samples: %s", length(test_ids)), log_file = log_file)
 
 #handle JAGS data assembly
 jags_parameters <- assemble_jags_data(input_data,
@@ -70,4 +76,10 @@ jags_parameters <- assemble_jags_data(input_data,
                                       temp_dir = output_dirs$temp,
                                       log_file = log_file)
 
-raw_model_output <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, log_file = log_file)
+model_output <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, log_file = log_file, temp_dir = output_dirs$temp)
+
+#summaries 
+summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, log_file = log_file)
+
+#get mean of test data (their posterior probabilities)
+mean_test_matrix(eta_samples = model_output$eta_samples, test_id = test_ids, log_file = log_file, temp_dir = output_dirs$temp)
