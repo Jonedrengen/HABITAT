@@ -39,6 +39,7 @@ args <- parse_args(parser, args = commandArgs(trailingOnly = TRUE), print_help_a
 input_file <- args$input
 config_file <- args$config
 
+
 #create output structure
 output_dirs <- write_output_structure(args$output)
 log_file <- file.path(output_dirs$logs, "blcm.log")
@@ -57,15 +58,22 @@ write_log(sprintf("id_column_index: %s", config$DATA_META$id_column_index), log_
 ######## Start Bayesian analysis #########
 ##########################################
 
-#read and validate input data
+# set seed for reproducibility if specified in config
+if (!is.null(config$JAGS_DATA$seed)) {
+  set.seed(config$JAGS_DATA$seed)
+}
+
+#read, validate and log input data
 raw_input_data <- read_data(input_file)
-write_log(sprintf("Input data dimensions: %s", paste(dim(raw_input_data), collapse = " x ")), log_file = log_file)
 input_data <- validate_data(raw_input_data, config, log_file = log_file)
-training_ids <- which(input_data[, config$DATA_META$training_column_index] == 1)
-write_log(sprintf("Number of training samples: %s", length(training_ids)), log_file = log_file)
-write_log(sprintf("Training IDs: %s", head(training_ids)), log_file = log_file)
-test_ids <- which(input_data[, config$DATA_META$training_column_index] == 0)
-write_log(sprintf("Number of test samples: %s", length(test_ids)), log_file = log_file)
+training_data_indices <- which(input_data[, config$DATA_META$training_column_index] == 1)
+test_data_indices <- which(input_data[, config$DATA_META$training_column_index] == 0)
+
+write_csv(input_data[training_data_indices, ], file.path(output_dirs$temp, "training_data.csv"), log_file = log_file)
+write_csv(input_data[test_data_indices, ], file.path(output_dirs$temp, "test_data.csv"), log_file = log_file)
+
+write_log(sprintf("Input data dimensions: %s", paste(dim(raw_input_data), collapse = " x ")), log_file = log_file)
+write_log(sprintf("Number of test samples: %s", length(test_data_indices)), log_file = log_file)
 
 #handle JAGS data assembly
 jags_parameters <- assemble_jags_data(input_data,
@@ -82,4 +90,8 @@ model_output <- run_model(jags_parameters = jags_parameters, config = config, mo
 summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, log_file = log_file)
 
 #get mean of test data (their posterior probabilities)
-mean_test_matrix(eta_samples = model_output$eta_samples, test_id = test_ids, log_file = log_file, temp_dir = output_dirs$temp)
+mean_test_matrix(input_data = input_data,
+                 eta_samples = model_output$eta_samples,
+                 config = config,
+                 log_file = log_file,
+                 results_dir = output_dirs$results)

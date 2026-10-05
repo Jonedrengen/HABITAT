@@ -39,7 +39,6 @@ write_feature_matrix <- function(input_data,
     #storage mode, because Dan used this
     storage.mode(feature_matrix) <- "numeric"
 
-
     if (!is.null(temp_dir)) {
         write_csv(data.frame(feature_matrix),
                   file_path = file.path(temp_dir, "feature_matrix.csv"),

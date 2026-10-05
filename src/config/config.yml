@@ -1,6 +1,6 @@
 default:
   JAGS_DATA:
-    seed: NULL
+    seed: 69 #set NULL for random seed
     chains: 3
     iterations: 500
     burn_in: 100
