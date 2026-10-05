@@ -25,14 +25,21 @@ run_test() {
 #### run tests ####
 ###################
 
-while getopts "d:" opt; do
+while getopts "d:s:" opt; do
   case $opt in
+    s) sb27_only="${OPTARG:-F}" ;;
     d) delete="${OPTARG:-F}" ;;
     *) echo "Invalid option: -$OPTARG" ;;
   esac
 done
 
-
+if [ "$delete" = "T" ]; then
+    rm -rf "$output_dir"
+fi
+if [ "$sb27_only" = "T" ]; then
+    run_test test_SB27_raw_input "SB27_raw_input"
+    exit 0
+fi
 : > "$test_review"
 # run base_raw_input test
 run_test test_SB27_raw_input "SB27_raw_input"
@@ -47,7 +54,3 @@ run_test test_class_columns_wrong "class_columns_wrong"
 # run feature_columns_wrong test
 run_test test_feature_columns_wrong "feature_columns_wrong"
 
-
-if [ "$delete" = "T" ]; then
-    rm -rf "$output_dir"
-fi
