@@ -31,7 +31,7 @@ run_model <- function(jags_parameters, config, model_file, log_file = NULL, temp
     if (!is.null(temp_dir)) {
         write_csv(model_results$bugs_summary_table, include_row_names = TRUE, file_path = file.path(temp_dir, "bugs_summary_table.csv"))
     }
-    write_log(paste0("Model results: ", names(model_results)), log_file = log_file)
+    write_log(paste("Model outputs: ", paste(names(model_results), collapse = ", ")), log_file = log_file)
     return(model_results)
 }
 

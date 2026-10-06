@@ -52,7 +52,6 @@ validate_config(config, log_file = log_file)
 write_log(sprintf("Config: %s", config_file), log_file = log_file)
 write_log(sprintf("JAGS_DATA: %s", paste(names(config$JAGS_DATA),":", config$JAGS_DATA)), log_file = log_file)
 write_log(sprintf("DATA_META: %s", paste(names(config$DATA_META),":", config$DATA_META)), log_file = log_file)
-write_log(sprintf("id_column_index: %s", config$DATA_META$id_column_index), log_file = log_file)
 
 ##########################################
 ######## Start Bayesian analysis #########
@@ -66,9 +65,11 @@ if (!is.null(config$JAGS_DATA$seed)) {
 #read, validate and log input data
 raw_input_data <- read_data(input_file)
 input_data <- validate_data(raw_input_data, config, log_file = log_file)
-training_data_indices <- which(input_data[, config$DATA_META$training_column_index] == 1)
-test_data_indices <- which(input_data[, config$DATA_META$training_column_index] == 0)
+training_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 1)
+test_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 0)
 
+#write analysis data, so validation and reproducibility are possible
+write_csv(input_data, file.path(output_dirs$temp, "input_data.csv"), log_file = log_file)
 write_csv(input_data[training_data_indices, ], file.path(output_dirs$temp, "training_data.csv"), log_file = log_file)
 write_csv(input_data[test_data_indices, ], file.path(output_dirs$temp, "test_data.csv"), log_file = log_file)
 
@@ -77,8 +78,8 @@ write_log(sprintf("Number of test samples: %s", length(test_data_indices)), log_
 
 #handle JAGS data assembly
 jags_parameters <- assemble_jags_data(input_data,
-                                      id_column_index = config$DATA_META$id_column_index,
-                                      training_column_index = config$DATA_META$training_column_index,
+                                      id_column_name = config$DATA_META$id_column_name,
+                                      training_column_name = config$DATA_META$training_column_name,
                                       class_column_prefix = config$DATA_META$class_column_prefix,
                                       feature_column_prefix = config$DATA_META$feature_column_prefix,
                                       temp_dir = output_dirs$temp,
@@ -89,9 +90,15 @@ model_output <- run_model(jags_parameters = jags_parameters, config = config, mo
 #summaries 
 summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, log_file = log_file)
 
-#get mean of test data (their posterior probabilities)
-mean_test_matrix(input_data = input_data,
-                 eta_samples = model_output$eta_samples,
-                 config = config,
-                 log_file = log_file,
-                 results_dir = output_dirs$results)
+#generate prediction scores for test samples and save the results
+generate_pred_scores(input_data = input_data,
+                     eta_samples = model_output$eta_samples,
+                     config = config,
+                     log_file = log_file,
+                     results_dir = output_dirs$results)
+
+
+#delete temporary files if the option is set to TRUE
+if (config$OPTIONS$delete_temp_files) {
+    file.remove(output_dirs$temp, recursive = TRUE)
+}

@@ -10,7 +10,14 @@ default:
       - "p"
       - "eta"
   DATA_META:
-    id_column_index: 1
-    training_column_index: 2
+    id_column_name: "Sample_Name"
+    training_column_name: "training"
     class_column_prefix: "CL_"
     feature_column_prefix: "FE_"
+  PLOTTING:
+    human_column_identifier: "_human_"       
+    chicken_column_identifier: "_chicken_"   
+    pork_column_identifier: "_pork_"         
+    beef_column_identifier: "_beef_"
+  OPTIONS:
+    delete_temp_files: FALSE

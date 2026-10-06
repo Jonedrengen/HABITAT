@@ -25,24 +25,19 @@ run_test() {
 #### run tests ####
 ###################
 
-while getopts "d:s:" opt; do
+while getopts "r:" opt; do
   case $opt in
-    s) sb27_only="${OPTARG:-F}" ;;
-    d) delete="${OPTARG:-F}" ;;
+    r) remove="${OPTARG:-F}" ;;
     *) echo "Invalid option: -$OPTARG" ;;
   esac
 done
 
-if [ "$delete" = "T" ]; then
+if [ "$remove" = "T" ]; then
     rm -rf "$output_dir"
 fi
-if [ "$sb27_only" = "T" ]; then
-    run_test test_SB27_raw_input "SB27_raw_input"
-    exit 0
-fi
+
 : > "$test_review"
-# run base_raw_input test
-run_test test_SB27_raw_input "SB27_raw_input"
+
 # run duplicate_ids test
 run_test test_duplicate_ids "duplicate_ids"
 # run non_01_training test
@@ -53,4 +48,7 @@ run_test test_quoted_input "quoted_input"
 run_test test_class_columns_wrong "class_columns_wrong"
 # run feature_columns_wrong test
 run_test test_feature_columns_wrong "feature_columns_wrong"
-
+# run 15 validation with ~3500 sb27
+run_test test_SB27_raw_input "SB27_raw_input"
+# run danmap 2713 input test
+run_test test_danmap_2713_input "danmap_2713_input"

@@ -59,3 +59,13 @@ test_feature_columns_wrong() {
         -c "$config_file"
     echo
 }
+
+test_danmap_2713_input() {
+    echo
+    echo "Running danmap_2713_input"
+    Rscript "$source_dir/src/run_bayesian.R" \
+        -i "$data/danmap_2713_input.csv" \
+        -o "$output_dir/danmap_2713_input_output/" \
+        -c "$config_file"
+    echo
+}

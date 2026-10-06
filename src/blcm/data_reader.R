@@ -2,8 +2,22 @@
 #### sub_functions for data validation #####
 #############################################
 
-validate_sample_ids <- function(raw_input_data, id_column_index, log_file = NULL) {
-    sample_id_vect <- raw_input_data[[id_column_index]]
+validate_column_names <- function(raw_input_data, log_file = NULL) {
+    if (anyDuplicated(names(raw_input_data))) {
+        message <- "Duplicate input column names found."
+        write_log(message, level = "ERROR", log_file = log_file)
+        stop(message)
+    }
+}
+
+validate_sample_ids <- function(raw_input_data, id_column_name, log_file = NULL) {
+    if (!(id_column_name %in% names(raw_input_data))) {
+        message <- paste0("ID column not found: ", id_column_name)
+        write_log(message, level = "ERROR", log_file = log_file)
+        stop(message)
+    }
+
+    sample_id_vect <- raw_input_data[[id_column_name]]
     if (anyDuplicated(sample_id_vect)) {
         write_log("Duplicate sample IDs found.", level = "ERROR", log_file = log_file)
         stop("Duplicate sample IDs found.")
@@ -11,8 +25,14 @@ validate_sample_ids <- function(raw_input_data, id_column_index, log_file = NULL
     write_log("No duplicate SampleIDs", level = "INFO", log_file = log_file)
 }
 
-validate_training_column <- function(raw_input_data, training_column_index, log_file = NULL) {
-    if (!(all(raw_input_data[[training_column_index]] %in% c(1, 0)))) {
+validate_training_column <- function(raw_input_data, training_column_name, log_file = NULL) {
+    if (!(training_column_name %in% names(raw_input_data))) {
+        message <- paste0("Training column not found: ", training_column_name)
+        write_log(message, level = "ERROR", log_file = log_file)
+        stop(message)
+    }
+
+    if (!(all(raw_input_data[[training_column_name]] %in% c(1, 0)))) {
         write_log("Training column not valid. (0 or 1 expected)", level = "ERROR", log_file = log_file)
         stop("Training column must be either 1 for training or 0 for testing.")
     }
@@ -59,14 +79,15 @@ validate_feature_columns <- function(raw_input_data, feature_column_prefix, log_
 #############################################
 
 validate_data <- function(raw_input_data, config, log_file = NULL) {
-    validate_sample_ids(raw_input_data, config$DATA_META$id_column_index, log_file = log_file)
-    validate_training_column(raw_input_data, config$DATA_META$training_column_index, log_file = log_file)
+    validate_column_names(raw_input_data, log_file = log_file)
+    validate_sample_ids(raw_input_data, config$DATA_META$id_column_name, log_file = log_file)
+    validate_training_column(raw_input_data, config$DATA_META$training_column_name, log_file = log_file)
     validate_class_columns(raw_input_data, config$DATA_META$class_column_prefix, log_file = log_file)
     validate_feature_columns(raw_input_data, config$DATA_META$feature_column_prefix, log_file = log_file)
     return(raw_input_data)
 }
 
 read_data <- function(file_path) {
-    data <- read.csv(file_path, stringsAsFactors = FALSE)
+    data <- read.csv(file_path, stringsAsFactors = FALSE, check.names = FALSE)
     return(data)
 }

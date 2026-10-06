@@ -12,4 +12,9 @@ validate_config <- function(config, log_file = NULL) {
         write_log("DATA_META section is missing in the config.", level = "ERROR", log_file = log_file)
         stop("DATA_META section is missing in the config.")
     }
+    if (is.null(config$DATA_META$id_column_name) || is.null(config$DATA_META$training_column_name)) {
+        message <- "DATA_META must define id_column_name and training_column_name."
+        write_log(message, level = "ERROR", log_file = log_file)
+        stop(message)
+    }
 }
