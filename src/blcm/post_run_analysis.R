@@ -30,7 +30,7 @@ generate_pred_scores <- function(input_data, eta_samples, config, log_file = NUL
         results[, i] <- v
     }
     if (!is.null(results_dir)) {
-        write_csv(results, include_row_names = TRUE, file.path(results_dir, "pred_scores.csv"), log_file = log_file)
+        write_csv(results, include_row_names = TRUE, file.path(results_dir, "pred_scores_raw.csv"), log_file = log_file)
     }
     return(results)
 }

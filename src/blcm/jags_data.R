@@ -59,7 +59,7 @@ assemble_jags_data <- function(input_data,
     write_log(paste0("id_column_name=", id_column_name, " training_column_name=", training_column_name, " class_column_prefix=", class_column_prefix," feature_column_prefix=", feature_column_prefix), log_file = log_file)
 
     eta_vector <- write_eta_vector(input_data, id_column_name = id_column_name, training_column_name = training_column_name, class_column_prefix = class_column_prefix, temp_dir = temp_dir, log_file = log_file)
-    feature_matrix <- write_feature_matrix(input_data, feature_column_prefix = feature_column_prefix, temp_dir = temp_dir, log_file = log_file)
+    feature_matrix <- write_feature_matrix(input_data, feature_column_prefix = feature_column_prefix, log_file = log_file)
     n_classes <- sum(startsWith(names(input_data), class_column_prefix))
     n_samples <- nrow(input_data)
     n_features <- ncol(feature_matrix)
