@@ -4,6 +4,8 @@
 suppressPackageStartupMessages(library(rjags))
 suppressPackageStartupMessages(library(coda))
 suppressPackageStartupMessages(library(optparse))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(dplyr))
 
 #get dir of the script
 get_root <- function(argv) {
