@@ -1,0 +1,63 @@
+@startuml HABITAT
+title HABITAT — Bayesian Latent Class Analysis
+
+left to right direction
+skinparam componentStyle uml2
+
+actor "Analyst" as Analyst
+artifact "Input CSV" as Input
+artifact "YAML config" as ConfigFile
+artifact "model.bug" as JAGSModel
+
+package "R application (src)" {
+  component "CLI orchestrator\nrun_bayesian.R" as App
+  component "Configuration\nread_config()\nvalidate_config()" as Config
+  component "Output setup\nwrite_output_structure()" as OutputSetup
+  component "Logging\nwrite_log()" as Logging
+  component "Data reader & validation\nread_data()\nvalidate_data()" as DataReader
+  component "JAGS data assembly\nassemble_jags_data()\nwrite_eta_vector()\nwrite_feature_matrix()" as JAGSData
+  component "Model runner\nrun_model()" as ModelRunner
+  component "Post-run analysis\nsummarize_rhat()\ngenerate_pred_scores()\ngenerate_blcm_summary()" as Analysis
+  component "Plotting\ngenerate_hist() (stub)" as Plotting
+}
+
+database "JAGS / R2jags" as JAGS
+artifact "Output directories\nlogs / results / temp" as Outputs
+artifact "Prediction scores CSV" as Predictions
+artifact "MCMC summaries & diagnostics" as Diagnostics
+
+Analyst --> App : --input / --config / --output
+Input --> DataReader : read
+ConfigFile --> Config : read
+App --> Config : validate settings
+App --> OutputSetup : create folders
+OutputSetup --> Outputs : creates
+App --> DataReader : validate input
+DataReader --> JAGSData : validated samples
+JAGSData --> ModelRunner : eta, Y, M_fit, N, K
+JAGSModel --> ModelRunner : model specification
+ModelRunner --> JAGS : fit Bayesian model
+JAGS --> ModelRunner : samples & summary
+ModelRunner --> Analysis : model output
+Analysis --> Predictions : writes scores
+Analysis --> Diagnostics : writes summaries
+Plotting ..> Analysis : intended plotting input
+
+App ..> Logging : progress and errors
+Config ..> Logging
+DataReader ..> Logging
+JAGSData ..> Logging
+ModelRunner ..> Logging
+Analysis ..> Logging
+
+note bottom of JAGSData
+  Training rows receive observed class labels (eta);
+  feature columns become the binary response matrix (Y).
+end note
+
+note bottom of Analysis
+  generate_blcm_summary() is currently a placeholder.
+  generate_hist() is currently an empty stub.
+end note
+
+@enduml
