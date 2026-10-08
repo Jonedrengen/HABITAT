@@ -13,7 +13,3 @@ write_log <- function(message = "no message provided",
   #print(sprintf("[%s] [%s] %s", level, time, message))
 }
 
-#csv wrapper function (so bad im sorry)
-write_csv <- function(data, file_path = NULL, include_row_names = FALSE, log_file = NULL) {
-    write.csv(data, file = file_path, row.names = include_row_names)
-}

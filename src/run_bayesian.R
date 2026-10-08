@@ -48,12 +48,12 @@ log_file <- file.path(output_dirs$logs, "blcm.log")
 model_file <- file.path(root, "model", "model.bug")
 write_log(sprintf("Outputs: %s", output_dirs$root), log_file = log_file)
 
-#read config
+#read config and save a copy in output
 config <- read_config(config_file)
 validate_config(config, log_file = log_file)
-write_log(sprintf("Config: %s", config_file), log_file = log_file)
-write_log(sprintf("JAGS_DATA: %s", paste(names(config$JAGS_DATA),":", config$JAGS_DATA)), log_file = log_file)
-write_log(sprintf("DATA_META: %s", paste(names(config$DATA_META),":", config$DATA_META)), log_file = log_file)
+file.copy(config_file, file.path(output_dirs$temp, "used_config.yml"))
+write_log(sprintf("saving config file to: %s", file.path(output_dirs$temp, "used_config.yml")), log_file = log_file)
+
 
 ##########################################
 ######## Start Bayesian analysis #########
@@ -71,9 +71,9 @@ training_data_indices <- which(input_data[[config$DATA_META$training_column_name
 test_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 0)
 
 #write analysis data, so validation and reproducibility are possible
-write_csv(input_data, file.path(output_dirs$temp, "input_data.csv"), log_file = log_file)
-write_csv(input_data[training_data_indices, ], file.path(output_dirs$temp, "training_data.csv"), log_file = log_file)
-write_csv(input_data[test_data_indices, ], file.path(output_dirs$temp, "test_data.csv"), log_file = log_file)
+write.csv(input_data, file = file.path(output_dirs$temp, "input_data.csv"), row.names = FALSE)
+write.csv(input_data[training_data_indices, ], file = file.path(output_dirs$temp, "training_data.csv"), row.names = FALSE)
+write.csv(input_data[test_data_indices, ], file = file.path(output_dirs$temp, "test_data.csv"), row.names = FALSE)
 
 write_log(sprintf("Input data dimensions: %s", paste(dim(raw_input_data), collapse = " x ")), log_file = log_file)
 write_log(sprintf("Number of test samples: %s", length(test_data_indices)), log_file = log_file)
@@ -87,18 +87,20 @@ jags_parameters <- assemble_jags_data(input_data,
                                       temp_dir = output_dirs$temp,
                                       log_file = log_file)
 
-model_output <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, log_file = log_file, temp_dir = output_dirs$temp)
+model_output <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, temp_dir = output_dirs$temp, log_file = log_file)
 
 #summaries 
 summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, log_file = log_file)
 
 #generate prediction scores for test samples and save the results
-generate_pred_scores(input_data = input_data,
-                     eta_samples = model_output$eta_samples,
-                     config = config,
-                     log_file = log_file,
-                     results_dir = output_dirs$results)
+pred_scores <- generate_pred_scores(input_data = input_data,
+                                    eta_samples = model_output$eta_samples,
+                                    config = config,
+                                    log_file = log_file,
+                                    results_dir = output_dirs$results)
 
+#TODO: add blcm_analysis.csv, with meta-info, like human/meat grouping, and other stuff
+generate_blcm_summary(pred_scores = pred_scores, test_data_indices = test_data_indices, config = config, log_file = log_file)
 
 #delete temporary files if the option is set to TRUE
 if (config$OPTIONS$delete_temp_files) {

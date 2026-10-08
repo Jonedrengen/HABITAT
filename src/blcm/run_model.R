@@ -29,7 +29,9 @@ run_model <- function(jags_parameters, config, model_file, log_file = NULL, temp
                             mcmc_object = coda::as.mcmc(raw_model_output)
                         )
     if (!is.null(temp_dir)) {
-        write_csv(model_results$bugs_summary_table, include_row_names = TRUE, file_path = file.path(temp_dir, "bugs_summary_table.csv"))
+        write.csv(model_results$bugs_summary_table,
+              file = file.path(temp_dir, "bugs_summary_table.csv"),
+              row.names = TRUE)
     }
     write_log(paste("Model outputs: ", paste(names(model_results), collapse = ", ")), log_file = log_file)
     return(model_results)

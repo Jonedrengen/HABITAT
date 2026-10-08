@@ -5,6 +5,28 @@ summarize_rhat <- function(bugs_summary_table, log_file = NULL) {
     write_log(paste0(capture.output(summary(pi_and_p_rows))), log_file = log_file)
 }
 
+group_by_column_headers <- function(column_names, groups, log_file = NULL) {
+    # Iterate over column_headers, then iterate over groups and see if an identifier matches the column header, if so, assign the column_header to that group
+    grouped_column_headers <- list()
+    
+    for (column in column_names) {
+        column_header <- column[1]
+        # Check each group to see if the column header matches any of the group's identifiers
+        for (group_name in names(groups)) {
+            for (id in groups[[group_name]]) {
+                if (grepl(tolower(id), tolower(column_header), fixed = TRUE)) {
+                    group_message <- paste0("Column: ", column_header, " grouped to: ", group_name)
+                    write_log(group_message, log_file = log_file)
+                    grouped_column_headers[[group_name]] <- c(grouped_column_headers[[group_name]], column_header)
+                }
+            }
+        }
+    }
+    return(grouped_column_headers)
+}
+
+
+
 generate_pred_scores <- function(input_data, eta_samples, config, log_file = NULL, results_dir = NULL) {
     test_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 0)
     latent_class_labels <- names(input_data)[startsWith(names(input_data), config$DATA_META$class_column_prefix)]
@@ -14,7 +36,7 @@ generate_pred_scores <- function(input_data, eta_samples, config, log_file = NUL
     write_log(paste0("generate_pred_scores input dimensions: ", nrow(mat_test), " rows and ", ncol(mat_test), " columns"), log_file = log_file)
     
     #matrix: columns = latent classes, rows = test samples
-    results <- matrix(
+    pred_scores <- matrix(
         NA_real_,
         nrow = length(test_data_indices),
         ncol = n_classes,
@@ -24,16 +46,29 @@ generate_pred_scores <- function(input_data, eta_samples, config, log_file = NUL
             )
     )
     
-    write_log(paste0("Initializing results matrix with ", length(test_data_indices), " rows and ", n_classes, " columns"), log_file = log_file)
+    write_log(paste0("Initializing pred_scores matrix with ", length(test_data_indices), " rows and ", n_classes, " columns"), log_file = log_file)
     for (i in 1:n_classes) {
         v <- apply(mat_test, MARGIN = 2, function(v) mean(v == i))
-        results[, i] <- v
+        pred_scores[, i] <- v
     }
     if (!is.null(results_dir)) {
-        write_csv(results, include_row_names = TRUE, file.path(results_dir, "pred_scores_raw.csv"), log_file = log_file)
+        write.csv(pred_scores,
+              file = file.path(results_dir, "pred_scores_raw.csv"),
+              row.names = TRUE)
     }
-    return(results)
+    return(pred_scores)
 }
+
+#placeholder for future code
+generate_blcm_summary <- function(pred_scores, test_data_indices, config, log_file = NULL, results_dir = NULL) {
+    write_log("starting generate_blcm_summary", log_file = log_file)
+    grouped_column_headers <- group_by_column_headers(colnames(pred_scores), config$ANALYSIS$groups, log_file = log_file)
+    
+
+
+    
+}
+
 
 # mat_test <- eta_samples[, test_id]
 

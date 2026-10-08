@@ -3,6 +3,7 @@ write_output_structure <- function(output_dir) {
         root = output_dir,
         logs = file.path(output_dir, "logs"),
         results = file.path(output_dir, "results"),
+        plots = file.path(output_dir, "results", "plots"),
         temp = file.path(output_dir, "temp")
     )
 

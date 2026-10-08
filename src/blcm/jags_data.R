@@ -17,13 +17,8 @@ write_eta_vector <- function(input_data,
     eta_vect[training_mask] <- max.col(class_matrix[training_mask, ], ties.method = "first")
     if (!is.null(temp_dir)) {
         write_log(paste0("see eta vector, with training samples and class assignments in temp_dir: ", temp_dir), log_file=log_file)
-        write_csv(data.frame(sample_id = input_data[[id_column_name]],
-                             training = input_data[[training_column_name]],
-                             eta = eta_vect,
-                             class_matrix
-                             ),
-                  file_path = file.path(temp_dir, "eta_vector.csv"),
-                  log_file = log_file)
+        data_frame <- data.frame(sample_id = input_data[[id_column_name]], training = input_data[[training_column_name]], eta = eta_vect,class_matrix)
+        write.csv(data_frame,file = file.path(temp_dir, "eta_vector.csv"),row.names = FALSE)
     }
     return(eta_vect)
 }
@@ -40,9 +35,9 @@ write_feature_matrix <- function(input_data,
     storage.mode(feature_matrix) <- "numeric"
 
     if (!is.null(temp_dir)) {
-        write_csv(data.frame(feature_matrix),
-                  file_path = file.path(temp_dir, "feature_matrix.csv"),
-                  log_file = log_file)
+        write.csv(data.frame(feature_matrix),
+              file = file.path(temp_dir, "feature_matrix.csv"),
+              row.names = FALSE)
     }
 
     return(feature_matrix)
