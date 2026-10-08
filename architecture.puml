@@ -22,9 +22,11 @@ package "R application (src)" {
 }
 
 database "JAGS / R2jags" as JAGS
-artifact "Output directories\nlogs / results / temp" as Outputs
-artifact "Prediction scores CSV" as Predictions
-artifact "MCMC summaries & diagnostics" as Diagnostics
+artifact "Output folders\nlogs / results / temp" as Outputs
+artifact "pred_scores_raw.csv\n(results)" as Predictions
+artifact "BUGS summary table\n(temp)" as ModelSummary
+artifact "R-hat diagnostic summary\n(log)" as Diagnostics
+artifact "Input splits & eta vector\n(temp)" as TempData
 
 Analyst --> App : --input / --config / --output
 Input --> DataReader : read
@@ -34,13 +36,16 @@ App --> OutputSetup : create folders
 OutputSetup --> Outputs : creates
 App --> DataReader : validate input
 DataReader --> JAGSData : validated samples
+App --> TempData : saves input and train/test splits
 JAGSData --> ModelRunner : eta, Y, M_fit, N, K
+JAGSData --> TempData : saves eta vector
 JAGSModel --> ModelRunner : model specification
 ModelRunner --> JAGS : fit Bayesian model
 JAGS --> ModelRunner : samples & summary
+ModelRunner --> ModelSummary : saves BUGS summary table
 ModelRunner --> Analysis : model output
 Analysis --> Predictions : writes scores
-Analysis --> Diagnostics : writes summaries
+Analysis --> Diagnostics : logs R-hat summary
 Plotting ..> Analysis : intended plotting input
 
 App ..> Logging : progress and errors
