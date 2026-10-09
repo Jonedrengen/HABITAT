@@ -15,13 +15,14 @@ default:
     class_column_prefix: "CL_"
     feature_column_prefix: "FE_"
   ANALYSIS:
-    groups:
+    groups: #column groupings, if the column name contains this substring (case-insensitive)
       human:
-        - "_human_"
+        - "_human"
       meat:
-        - "_chicken_"
-        - "_pork_"
-        - "_beef_"
+        - "_chicken"
+        - "_pork"
+        - "_beef"
+        - "_turkey"
     plots:
       save_plots: TRUE
       plot_format: "png" #only png supported

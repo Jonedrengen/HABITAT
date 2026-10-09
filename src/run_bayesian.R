@@ -51,7 +51,7 @@ write_log(sprintf("Outputs: %s", output_dirs$root), log_file = log_file)
 #read config and save a copy in output
 config <- read_config(config_file)
 validate_config(config, log_file = log_file)
-file.copy(config_file, file.path(output_dirs$temp, "used_config.yml"))
+file.copy(config_file, file.path(output_dirs$temp, paste0(Sys.time(), "_config.yml")))
 write_log(sprintf("saving config file to: %s", file.path(output_dirs$temp, "used_config.yml")), log_file = log_file)
 
 
@@ -100,7 +100,12 @@ pred_scores <- generate_pred_scores(input_data = input_data,
                                     results_dir = output_dirs$results)
 
 #TODO: add blcm_analysis.csv, with meta-info, like human/meat grouping, and other stuff
-generate_blcm_summary(pred_scores = pred_scores, test_data_indices = test_data_indices, config = config, log_file = log_file)
+generate_blcm_summary(input_data = input_data,
+                      pred_scores = pred_scores,
+                      test_data_indices = test_data_indices,
+                      config = config,
+                      results_dir = output_dirs$results,
+                      log_file = log_file)
 
 #delete temporary files if the option is set to TRUE
 if (config$OPTIONS$delete_temp_files) {
