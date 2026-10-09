@@ -26,6 +26,7 @@ source(file.path(root, "blcm", "data_reader.R"))
 source(file.path(root, "blcm", "jags_data.R"))
 source(file.path(root, "blcm", "run_model.R"))
 source(file.path(root, "blcm", "post_run_analysis.R"))
+source(file.path(root, "blcm", "plotting.R"))
 write_log(sprintf("Root directory: %s", root))
 
 ########################################################################################
@@ -100,12 +101,15 @@ pred_scores <- generate_pred_scores(input_data = input_data,
                                     results_dir = output_dirs$results)
 
 #TODO: add blcm_analysis.csv, with meta-info, like human/meat grouping, and other stuff
-generate_blcm_summary(input_data = input_data,
-                      pred_scores = pred_scores,
-                      test_data_indices = test_data_indices,
-                      config = config,
-                      results_dir = output_dirs$results,
-                      log_file = log_file)
+pred_scores_summary <- generate_blcm_summary(input_data = input_data,
+                                                pred_scores = pred_scores,
+                                                test_data_indices = test_data_indices,
+                                                config = config,
+                                                results_dir = output_dirs$results,
+                                                log_file = log_file)
+
+#generate histograms for the prediction scores summary
+generate_histograms(pred_scores_summary = pred_scores_summary, plots_dir = output_dirs$plots)
 
 #delete temporary files if the option is set to TRUE
 if (config$OPTIONS$delete_temp_files) {

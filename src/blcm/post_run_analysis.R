@@ -104,7 +104,7 @@ generate_blcm_summary <- function(input_data, pred_scores, test_data_indices, co
     #write.csv(pred_scores[, grouped_column_headers$human, drop = FALSE], file = file.path(results_dir, "human.csv"))
 
 
-    pred_scores_results <- data.frame(
+    pred_scores_summary <- data.frame(
         pred_scores,
         isolate_source  = isolate_source,
         human_pred      = rowSums(pred_scores[, grouped_column_headers$human, drop = FALSE]),
@@ -115,8 +115,8 @@ generate_blcm_summary <- function(input_data, pred_scores, test_data_indices, co
         other_pred      = rowSums(pred_scores[, !(colnames(pred_scores) %in% c(grouped_column_headers$meat, grouped_column_headers$human)), drop = FALSE])
     )
     
-    write.csv(pred_scores_results, file = file.path(results_dir, "pred_scores_summary.csv"))
-    return(pred_scores_results)
+    write.csv(pred_scores_summary, file = file.path(results_dir, "pred_scores_summary.csv"))
+    return(pred_scores_summary)
 
 }
 

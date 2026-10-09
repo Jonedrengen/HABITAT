@@ -39,10 +39,10 @@ run_model <- function(jags_parameters, config, model_file, log_file = NULL, temp
 
 #by Daniel Park (both)
 #chain histories
-plot_results <- function(expression = "", mcmc_object) {
-    plot(mcmc_object[, grep(expression, coda::varnames(mcmc_object))])
-}
-#retrieve specific parameter samples from coda object
-get_res   <- function(expression = "", mcmc_object) {
-    mcmc_object[,grep(expression, varnames(mcmc_object))]
-}
+# plot_results <- function(expression = "", mcmc_object) {
+#     plot(mcmc_object[, grep(expression, coda::varnames(mcmc_object))])
+# }
+# #retrieve specific parameter samples from coda object
+# get_res   <- function(expression = "", mcmc_object) {
+#     mcmc_object[,grep(expression, varnames(mcmc_object))]
+# }
