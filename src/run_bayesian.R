@@ -33,11 +33,11 @@ write_log(sprintf("Root directory: %s", root))
 ####### define command line options, parse arguments and define Global variables #######
 ########################################################################################
 option_list <- list(
-    make_option(c("--input", "-i"), type = "character", metavar = "FILE_PATH", help = "Path to input file (.csv)"),
-    make_option(c("--output", "-o"), type = "character", metavar = "DIR_PATH", help = "Path to output directory"),
-    make_option(c("--config", "-c"), type = "character", metavar = "FILE_PATH", help = "Path to config file (.yml)")
+    make_option(c("--input", "-i"), type = "character", metavar = "FILE_PATH", required = TRUE, help = "Path to input file (.csv)"),
+    make_option(c("--output", "-o"), type = "character", metavar = "DIR_PATH", required = TRUE, help = "Path to output directory"),
+    make_option(c("--config", "-c"), type = "character", metavar = "FILE_PATH", required = TRUE, help = "Path to config file (.yml)")
 )
-parser <- OptionParser(usage = "Usage: %prog [options]", option_list = option_list)
+parser <- OptionParser(usage = "Usage: Rscript %prog [options]; -h for help", option_list = option_list)
 args <- parse_args(parser, args = commandArgs(trailingOnly = TRUE), print_help_and_exit = TRUE, positional_arguments = FALSE, convert_hyphens_to_underscores = FALSE)
 input_file <- args$input
 config_file <- args$config

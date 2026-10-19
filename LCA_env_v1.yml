@@ -1,4 +1,4 @@
-name: LCA_env_v1
+name: HABITAT_blcm
 channels:
   - conda-forge
   - bioconda
