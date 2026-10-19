@@ -22,6 +22,20 @@ Rscript src/run_bayesian.R \
   --config src/config/config.yml
 ```
 
+## Run Slurm
+
+Use `src/slurmarize.sh` to wrap the run for SLURM HPC systems. Before submitting, edit `src/slurm_spec.env` so `conda_env_prefix` and `source_dir` point to your Conda environment and source directory.
+
+Pass the run options after the script name; `sbatch` forwards them to the script. Run from the `LCA_v1` directory so the relative paths resolve:
+
+```bash
+sbatch src/slurmarize.sh \
+  -i data/SB27_raw_input.csv \
+  -o output/SB27 \
+  -c src/config/config.yml \
+  -s src/slurm_spec.env
+```
+
 ## Output
 
 ```text

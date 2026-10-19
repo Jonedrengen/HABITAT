@@ -9,7 +9,12 @@
 
 
 usage() {
-  echo "Usage: $0 -i input_file -o output_dir -c config_file -s slurm_spec [-h]"
+  echo "Usage: sbatch $0 -i input_file -o output_dir -c config_file -s slurm_spec [-h]"
+  echo "  -i input_file      Path to input file (.csv)"
+  echo "  -o output_dir      Path to output directory"
+  echo "  -c config_file     Path to config file (.yml)"
+  echo "  -s slurm_spec      Path to slurm specification file (.env)"
+  echo "  -h                 Show this help message"
 }
 
 while getopts "i:o:c:s:h" opt; do
@@ -23,15 +28,23 @@ while getopts "i:o:c:s:h" opt; do
   esac
 done
 
-
+#validate input
 if [[ -z "$input_file" || -z "$output_dir" || ! -r "$config_file" ]]; then
   usage
   exit 1
 fi
-mkdir -p "$output_dir"
+
+#check for slurm specification file
 if ! source "$slurm_spec"; then
   echo "Error: Failed to evaluate slurm_spec"
   echo "Slurm spec: $slurm_spec"
+  exit 1
+fi
+
+#make sure slurm is used
+if [[ ! ${SLURM_JOB_ID} ]]; then
+  echo "Error: Not running within a SLURM job"
+  echo "use 'sbatch' to submit the job"
   exit 1
 fi
 
