@@ -65,12 +65,28 @@ DATA_META:
         - "_turkey"
 ```
 
-## where to find things
+## Where to find things
+
+```text
+LCA_v1/
+├── README.md
+├── LCA_env_v1.yml                  # Conda environment
+├── src/
+│   ├── run_bayesian.R              # entry point
+│   ├── slurmarize.sh               # Slurm wrapper
+│   ├── config/                     # config.yml, slurm_spec.env
+│   ├── blcm/                       # input checks, JAGS data, summaries, plots
+│   ├── model/model.bug             # the JAGS model
+│   ├── utils/                      # logging and output folder helpers
+│   └── base_training/example/      # example input
+│
+├──
+```
 
 ## Output
 
 ```text
-output/SB27/
+output/
 ├── logs/
 │   └── blcm.log
 ├── results/
