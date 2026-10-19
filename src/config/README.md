@@ -61,4 +61,5 @@ Slurm environment settings for [slurmarize.sh](/Users/B328695/Desktop/HABITAT/LC
 ```bash
 conda_env_prefix=/path/to/conda/env   # full path to the Conda env, not the env name
 source_dir=/path/to/src               # path to the src/ folder
+module_to_load=path/to/module         # leave empty unless you need it, example: module_to_load=miniconda/23.11.0-2
 ```
