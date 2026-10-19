@@ -48,5 +48,4 @@ if [[ ! ${SLURM_JOB_ID} ]]; then
   exit 1
 fi
 
-
 conda run -p "$conda_env_prefix" Rscript "$source_dir/run_bayesian.R" -i "$input_file" -o "$output_dir" -c "$config_file"

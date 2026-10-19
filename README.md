@@ -13,7 +13,7 @@ conda activate HABITAT_blcm
 
 ## Run
 
-Input CSV files should include sample IDs, a `training` column (`1` for training and `0` for testing), class columns prefixed with `CL_`, and feature columns prefixed with `FE_`. Defaults are defined in `src/config/config.yml`.
+Basic run command for the R script. see the `config` section in this readme for config specifics
 
 ```bash
 Rscript src/run_bayesian.R \
@@ -24,7 +24,7 @@ Rscript src/run_bayesian.R \
 
 ## Run Slurm
 
-Use `src/slurmarize.sh` to wrap the run for SLURM HPC systems. Before submitting, edit `src/slurm_spec.env` so `conda_env_prefix` and `source_dir` point to your Conda environment and source directory.
+Use `src/slurmarize.sh` to wrap the run for SLURM HPC systems. Before submitting, edit `src/slurm_spec.env`. see `config/slurm_spec.env`
 
 Pass the run options after the script name; `sbatch` forwards them to the script. Run from the `LCA_v1` directory so the relative paths resolve:
 
@@ -34,6 +34,32 @@ sbatch src/slurmarize.sh \
   -o output/SB27 \
   -c src/config/config.yml \
   -s src/slurm_spec.env
+```
+
+## config
+
+config file at `config/config.yml`. See `config/README.md` for detailed config info. It is recommended to not change anything in `JAGS_DATA`
+
+most importantly, specify Data structure by changing values in DATA_META. This allows the script to understand your data.
+```yaml
+DATA_META:
+  id_column_name        : "id_column_header"        # default: "Sample_Name"
+  training_column_name  : "training_column_header"  # default: "training"
+  class_column_prefix   : "some_prefix"             # default: "CL_"
+  feature_column_prefix : "some_prefix"             # default: "FE_"
+```
+___
+For now, ANALYSIS, is used to group data for plots and summaries. It does this by using substrings to identify columns.
+```yaml
+  ANALYSIS:
+    groups: 
+      human:        # human group
+        - "_human"    # columns containing "_human" grouped to 'human'
+      meat:         # meat group
+        - "_chicken"  # columns containing "_chicken" grouped to 'meat'
+        - "_pork"     # columns containing "_pork" grouped to 'meat'
+        - "_beef"     # ...
+        - "_turkey"
 ```
 
 ## Output

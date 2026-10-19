@@ -15,7 +15,7 @@ default:
     class_column_prefix: "CL_"
     feature_column_prefix: "FE_"
   ANALYSIS:
-    groups: #column groupings, if the column name contains this substring (case-insensitive)
+    groups: # include a substring, like "_human", to group columns together
       human:
         - "_human"
       meat:
@@ -23,8 +23,5 @@ default:
         - "_pork"
         - "_beef"
         - "_turkey"
-    plots:
-      save_plots: TRUE
-      plot_format: "png" #only png supported
   OPTIONS:
     delete_temp_files: FALSE

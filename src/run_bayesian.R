@@ -113,5 +113,5 @@ generate_histograms(pred_scores_summary = pred_scores_summary, plots_dir = outpu
 
 #delete temporary files if the option is set to TRUE
 if (config$OPTIONS$delete_temp_files) {
-    file.remove(output_dirs$temp, recursive = TRUE)
+    unlink(output_dirs$temp, recursive = TRUE)
 }
