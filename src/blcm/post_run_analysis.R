@@ -109,8 +109,8 @@ generate_blcm_summary <- function(input_data, pred_scores, test_data_indices, co
         isolate_source  = isolate_source,
         human_pred      = rowSums(pred_scores[, grouped_column_headers$human, drop = FALSE]),
         meat_pred       = rowSums(pred_scores[, grouped_column_headers$meat, drop = FALSE]),
-        Human_class     = ifelse(rowSums(pred_scores[, grouped_column_headers$human, drop = FALSE]) <= 0.2, 1, 0),
-        Indeterminate   = ifelse(rowSums(pred_scores[, grouped_column_headers$human, drop = FALSE]) > 0.2 & rowSums(pred_scores[, grouped_column_headers$meat, drop = FALSE]) < 0.8, 1, 0),
+        Human_class     = ifelse(rowSums(pred_scores[, grouped_column_headers$human, drop = FALSE]) >= 0.8, 1, 0),
+        Indeterminate   = ifelse(rowSums(pred_scores[, grouped_column_headers$human, drop = FALSE]) < 0.8 & rowSums(pred_scores[, grouped_column_headers$meat, drop = FALSE]) < 0.8, 1, 0),
         Meat_class      = ifelse(rowSums(pred_scores[, grouped_column_headers$meat, drop = FALSE]) >= 0.8, 1, 0),
         other_pred      = rowSums(pred_scores[, !(colnames(pred_scores) %in% c(grouped_column_headers$meat, grouped_column_headers$human)), drop = FALSE])
     )

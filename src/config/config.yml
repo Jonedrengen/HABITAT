@@ -15,7 +15,7 @@ default:
     class_column_prefix: "CL_"
     feature_column_prefix: "FE_"
   ANALYSIS:
-    groups: # include a substring, like "_human", to group columns together
+    groups:
       human:
         - "_human"
       meat:

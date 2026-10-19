@@ -13,34 +13,36 @@ conda activate HABITAT_blcm
 
 ## Run
 
-Basic run command for the R script. see the `config` section in this readme for config specifics
+Run the analysis with:
 
 ```bash
-Rscript src/run_bayesian.R \
-  --input data/SB27_raw_input.csv \
-  --output output/SB27 \
-  --config src/config/config.yml
+Rscript path/to/run_bayesian.R \
+  --input path/to/input.csv \
+  --output path/to/output_dir \
+  --config path/to/config.yml
 ```
 
 ## Run Slurm
 
-Use `src/slurmarize.sh` to wrap the run for SLURM HPC systems. Before submitting, edit `src/slurm_spec.env`. see `config/slurm_spec.env`
+Use `path/to/slurmarize.sh` to run on SLURM HPC systems.
 
-Pass the run options after the script name; `sbatch` forwards them to the script. Run from the `LCA_v1` directory so the relative paths resolve:
+1. Edit [src/config/slurm_spec.env](src/config/slurm_spec.env) with your Conda and source paths.
+2. Specify the SBATCH variables to match your system. Submit the job:
 
 ```bash
-sbatch src/slurmarize.sh \
-  -i data/SB27_raw_input.csv \
-  -o output/SB27 \
-  -c src/config/config.yml \
-  -s src/slurm_spec.env
+sbatch path/to/slurmarize.sh \
+  -i path/to/input.csv \
+  -o path/to/output_dir \
+  -c path/to/config.yml \
+  -s path/to/slurm_spec.env
 ```
 
-## config
+## Config
 
-config file at `config/config.yml`. See `config/README.md` for detailed config info. It is recommended to not change anything in `JAGS_DATA`
+Settings are in [src/config/config.yml](src/config/config.yml). See [src/config/README.md](src/config/README.md) for details.
 
-most importantly, specify Data structure by changing values in DATA_META. This allows the script to understand your data.
+Leave `JAGS_DATA` as it is. The most important setting is `DATA_META`, which tells the script how your data is structured: Example dataset in `src/base_training/example`
+
 ```yaml
 DATA_META:
   id_column_name        : "id_column_header"        # default: "Sample_Name"
@@ -48,8 +50,9 @@ DATA_META:
   class_column_prefix   : "some_prefix"             # default: "CL_"
   feature_column_prefix : "some_prefix"             # default: "FE_"
 ```
-___
-For now, ANALYSIS, is used to group data for plots and summaries. It does this by using substrings to identify columns.
+
+`ANALYSIS.groups` sets the host groups used in summaries and plots. Each entry is a substring that identifies columns:
+
 ```yaml
   ANALYSIS:
     groups: 
@@ -61,6 +64,8 @@ For now, ANALYSIS, is used to group data for plots and summaries. It does this b
         - "_beef"     # ...
         - "_turkey"
 ```
+
+## where to find things
 
 ## Output
 

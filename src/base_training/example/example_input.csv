@@ -1,0 +1,9 @@
+Sample_Name,training,CL_human,CL_chicken,CL_pork,FE_MGE1,FE_MGE2,FE_MGE3,FE_MGE4
+Sample001,1,1,0,0,1,0,1,0
+Sample002,1,1,0,0,1,1,0,0
+Sample003,1,0,1,0,0,1,1,0
+Sample004,1,0,1,0,1,1,0,1
+Sample005,1,0,0,1,0,0,1,1
+Sample006,1,0,0,1,0,1,1,1
+Sample007,0,0,0,0,1,0,1,0
+Sample008,0,0,0,0,0,1,0,1

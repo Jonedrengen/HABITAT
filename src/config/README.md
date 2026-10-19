@@ -51,7 +51,7 @@ ___
 
 ```yaml
 OPTIONS:
-  delete_temp_files: FALSE   # not working yet, nothing is deleted when TRUE
+  delete_temp_files: FALSE   # TRUE deletes the temp/ folder after the run
 ```
 
 ## slurm_spec.env
