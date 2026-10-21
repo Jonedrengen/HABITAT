@@ -57,12 +57,12 @@ DATA_META:
   ANALYSIS:
     groups: 
       human:        # human group
-        - "_human"    # columns containing "_human" grouped to 'human'
+        - "human"    # columns containing "human" grouped to 'human'
       meat:         # meat group
-        - "_chicken"  # columns containing "_chicken" grouped to 'meat'
-        - "_pork"     # columns containing "_pork" grouped to 'meat'
-        - "_beef"     # ...
-        - "_turkey"
+        - "chicken"  # columns containing "chicken" grouped to 'meat'
+        - "pork"     # columns containing "pork" grouped to 'meat'
+        - "beef"     # ...
+        - "turkey"
 ```
 
 ## Where to find things
@@ -93,7 +93,7 @@ output/
 │   ├── pred_scores_raw.csv
 │   ├── pred_scores.csv
 │   └── plots/
-│       └── main_histogram.png
+│       └── histogram.png
 └── temp/
     ├── input_data.csv
     ├── training_data.csv
