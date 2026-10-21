@@ -41,7 +41,7 @@ sbatch path/to/slurmarize.sh \
 
 Settings are in [src/config/config.yml](src/config/config.yml). See [src/config/README.md](src/config/README.md) for details.
 
-Leave `JAGS_DATA` as it is. The most important setting is `DATA_META`, which tells the script how your data is structured: Example dataset in `src/base_training/example`
+`DATA_META` tells the script how your data is structured and where to gather your data from: Example dataset in `src/base_training/example`
 
 ```yaml
 DATA_META:
