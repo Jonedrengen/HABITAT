@@ -40,8 +40,8 @@ generate_host_mapping <- function(input_data, test_data_indices, config, log_fil
     write_log(paste0("Class column names: ", paste(class_column_names, collapse = ", ")), log_file = log_file)
     class_columns <- input_data[test_data_indices, class_column_names, drop = FALSE]
 
-    # Iterate over each test data isolate and assign the initial host based on class columns
-    for (i in 1:length(test_data_indices)) {
+    # Iterate over each test data isolate and assign the host based on class columns
+    for (i in seq_along(test_data_indices)) {
         for (col in class_column_names) {
             if (class_columns[i, col] == 1) {
                 isolate_source[i] <- col
@@ -50,10 +50,11 @@ generate_host_mapping <- function(input_data, test_data_indices, config, log_fil
         }
     }
     write_log("renaming to make sense based on host groups", log_file = log_file)
-    for (i in 1:length(isolate_source)) {
+    #this is just a rename step...
+    for (i in seq_along(isolate_source)) {
         for (host in hosts) {
             if (grepl(host, isolate_source[i], ignore.case = TRUE)) {
-                isolate_source[i] <- gsub("_", "", host) #gsub because config has _ in front of host names
+                isolate_source[i] <- host
                 break
             }
         }
@@ -61,7 +62,7 @@ generate_host_mapping <- function(input_data, test_data_indices, config, log_fil
     return(isolate_source)
 }
 
-generate_pred_scores <- function(input_data, eta_samples, config, log_file = NULL, results_dir = NULL) {
+generate_pred_scores_raw <- function(input_data, eta_samples, config, log_file = NULL, results_dir = NULL) {
     test_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 0)
     latent_class_labels <- names(input_data)[startsWith(names(input_data), config$DATA_META$class_column_prefix)]
     n_classes <- length(latent_class_labels)
@@ -94,8 +95,8 @@ generate_pred_scores <- function(input_data, eta_samples, config, log_file = NUL
 }
 
 #placeholder for future code
-generate_blcm_summary <- function(input_data, pred_scores, test_data_indices, config, log_file = NULL, results_dir = NULL) {
-    write_log("starting generate_blcm_summary", log_file = log_file)
+generate_pred_scores <- function(input_data, pred_scores, test_data_indices, config, log_file = NULL, results_dir = NULL) {
+    write_log("starting pred_scores (with some additional info)", log_file = log_file)
     grouped_column_headers <- group_by_column_headers(colnames(pred_scores), config$ANALYSIS$groups, log_file = log_file)
     isolate_source <- generate_host_mapping(input_data, test_data_indices, config, log_file = log_file)
 
@@ -115,10 +116,11 @@ generate_blcm_summary <- function(input_data, pred_scores, test_data_indices, co
         other_pred      = rowSums(pred_scores[, !(colnames(pred_scores) %in% c(grouped_column_headers$meat, grouped_column_headers$human)), drop = FALSE])
     )
     
-    write.csv(pred_scores_summary, file = file.path(results_dir, "pred_scores_summary.csv"))
+    write.csv(pred_scores_summary, file = file.path(results_dir, "pred_scores.csv"))
     return(pred_scores_summary)
 
 }
+
 
 
 # mat_test <- eta_samples[, test_id]

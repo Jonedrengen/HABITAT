@@ -2,8 +2,8 @@ default:
   JAGS_DATA:
     seed: 69 #set NULL for random seed
     chains: 3
-    iterations: 10000
-    burn_in: 5000
+    iterations: 500
+    burn_in: 100
     thin: 1
     save_parameters:
       - "pi"
@@ -17,11 +17,11 @@ default:
   ANALYSIS:
     groups:
       human:
-        - "_human"
+        - "human"
       meat:
-        - "_chicken"
-        - "_pork"
-        - "_beef"
-        - "_turkey"
+        - "chicken"
+        - "pork"
+        - "beef"
+        - "turkey"
   OPTIONS:
     delete_temp_files: FALSE

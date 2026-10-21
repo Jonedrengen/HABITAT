@@ -16,13 +16,12 @@ default_meat_hist_config <- list(
     group_color_map = c(
         "Human" = "goldenrod1",
         "Indeterminate" = "grey70",
-        "Animal" = "red3"
-  ),
-
-    file_save_name      = "main_histogram.png",
+        "Animal" = "red3"),
+    file_save_name      = "histogram.png",
     width               = 16,
     height              = 12
 )
+
 
 generate_hist <- function(Meat_pred_vector, hist_config = default_meat_hist_config, plots_dir = NULL, log_file = NULL) {
     #--------docstring----------
@@ -82,6 +81,32 @@ generate_hist <- function(Meat_pred_vector, hist_config = default_meat_hist_conf
     #return(histogram_plot)
 }
 
+generate_hist_by_species <- function(pred_scores_summary, hist_config = default_meat_hist_config, plots_dir = NULL, log_file = NULL) {
+    sources <- unique(pred_scores_summary$isolate_source)
+    
+    #check for missing isolate_source values (should not be)
+    if (any(is.na(pred_scores_summary$isolate_source))) {
+        write_log("Some entries have missing isolate_source.", level = "WARNING", log_file = log_file)
+    }
+
+    for (source in sources) {
+
+        #change the histogram configuration for the current source if needed
+        hist_config_current <- hist_config
+        hist_config_current$file_save_name <- sprintf("%s_%s", source, hist_config$file_save_name)
+        hist_config_current$title <- sprintf("%s - %s", source, hist_config$title) 
+        hist_config_current$x_label <- sprintf("%s - %s", hist_config$x_label, paste0("(",source,")"))
+
+        # subset the data for the current source and generate the histogram
+        source_subset_indices <- which(pred_scores_summary$isolate_source == source)
+        source_subset <- pred_scores_summary$meat_pred[source_subset_indices]
+        generate_hist(Meat_pred_vector = source_subset,
+                    hist_config = hist_config_current,
+                    plots_dir = plots_dir,
+                    log_file = log_file)
+        write_log(sprintf("generated histogram for source: %s", source), log_file = log_file)
+    }
+}
 
 generate_histograms <- function(pred_scores_summary, plots_dir = NULL, log_file = NULL) {
     write_log("generating histograms for prediction scores summary...", log_file = log_file)
@@ -89,5 +114,12 @@ generate_histograms <- function(pred_scores_summary, plots_dir = NULL, log_file 
                   hist_config = default_meat_hist_config,
                   plots_dir = plots_dir,
                   log_file = log_file)
+
+    write_log("generating histograms by group...", log_file = log_file)
+    generate_hist_by_species(pred_scores_summary = pred_scores_summary,
+                           hist_config = default_meat_hist_config,
+                           plots_dir = plots_dir,
+                           log_file = log_file)
+    
 
 }

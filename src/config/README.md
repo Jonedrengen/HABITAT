@@ -37,12 +37,12 @@ ___
 ANALYSIS:
   groups:
     human:
-      - "_human"      # columns containing "_human" grouped to 'human'
+      - "human"      # columns containing "human" grouped to 'human'
     meat:
-      - "_chicken"    # columns containing "_chicken" grouped to 'meat'
-      - "_pork"
-      - "_beef"
-      - "_turkey"
+      - "chicken"    # columns containing "chicken" grouped to 'meat'
+      - "pork"
+      - "beef"
+      - "turkey"
 ```
 
 ___

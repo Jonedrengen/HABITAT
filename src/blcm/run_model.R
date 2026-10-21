@@ -37,6 +37,7 @@ run_model <- function(jags_parameters, config, model_file, log_file = NULL, temp
     return(model_results)
 }
 
+
 #by Daniel Park (both)
 #chain histories
 # plot_results <- function(expression = "", mcmc_object) {

@@ -91,7 +91,7 @@ output/
 │   └── blcm.log
 ├── results/
 │   ├── pred_scores_raw.csv
-│   ├── pred_scores_summary.csv
+│   ├── pred_scores.csv
 │   └── plots/
 │       └── main_histogram.png
 └── temp/

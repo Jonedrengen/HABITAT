@@ -94,14 +94,14 @@ model_output <- run_model(jags_parameters = jags_parameters, config = config, mo
 summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, log_file = log_file)
 
 #generate prediction scores for test samples and save the results
-pred_scores <- generate_pred_scores(input_data = input_data,
+pred_scores <- generate_pred_scores_raw(input_data = input_data,
                                     eta_samples = model_output$eta_samples,
                                     config = config,
                                     log_file = log_file,
                                     results_dir = output_dirs$results)
 
 #TODO: add blcm_analysis.csv, with meta-info, like human/meat grouping, and other stuff
-pred_scores_summary <- generate_blcm_summary(input_data = input_data,
+pred_scores_summary <- generate_pred_scores(input_data = input_data,
                                                 pred_scores = pred_scores,
                                                 test_data_indices = test_data_indices,
                                                 config = config,
@@ -110,6 +110,8 @@ pred_scores_summary <- generate_blcm_summary(input_data = input_data,
 
 #generate histograms for the prediction scores summary
 generate_histograms(pred_scores_summary = pred_scores_summary, plots_dir = output_dirs$plots)
+
+
 
 #delete temporary files if the option is set to TRUE
 if (config$OPTIONS$delete_temp_files) {
