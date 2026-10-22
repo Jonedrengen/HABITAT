@@ -80,6 +80,7 @@ write_log(sprintf("Input data dimensions: %s", paste(dim(raw_input_data), collap
 write_log(sprintf("Number of test samples: %s", length(test_data_indices)), log_file = log_file)
 
 #handle JAGS data assembly
+write_log("___________________________ Starting JAGS data assembly ___________________________", log_file = log_file)
 jags_parameters <- assemble_jags_data(input_data,
                                       id_column_name = config$DATA_META$id_column_name,
                                       training_column_name = config$DATA_META$training_column_name,
@@ -88,18 +89,25 @@ jags_parameters <- assemble_jags_data(input_data,
                                       temp_dir = output_dirs$temp,
                                       log_file = log_file)
 
+write_log("___________________________ Running JAGS model ___________________________", log_file = log_file)
 model_output <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, temp_dir = output_dirs$temp, log_file = log_file)
 
+
+
+write_log("___________________________ Summarizing model output ___________________________", log_file = log_file)
 #summaries 
 summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, log_file = log_file)
 
+write_log("___________________________ Generating prediction scores raw ___________________________", log_file = log_file)
 #generate prediction scores for test samples and save the results
 pred_scores <- generate_pred_scores_raw(input_data = input_data,
-                                    eta_samples = model_output$eta_samples,
-                                    config = config,
-                                    log_file = log_file,
-                                    results_dir = output_dirs$results)
+                                        eta_samples = model_output$eta_samples,
+                                        config = config,
+                                        log_file = log_file,
+                                        results_dir = output_dirs$results)
 
+
+write_log("___________________________ Generating prediction scores ___________________________", log_file = log_file)
 #TODO: add blcm_analysis.csv, with meta-info, like human/meat grouping, and other stuff
 pred_scores_summary <- generate_pred_scores(input_data = input_data,
                                                 pred_scores = pred_scores,
@@ -108,6 +116,18 @@ pred_scores_summary <- generate_pred_scores(input_data = input_data,
                                                 results_dir = output_dirs$results,
                                                 log_file = log_file)
 
+write_log("___________________________ Generating FZEC summary ___________________________", log_file = log_file)
+#FZEC summary as per Dan's implementation
+generate_CIs_FZEC_pred_scores(input_data = input_data,
+                                pred_scores_summary = pred_scores_summary,
+                                test_data_indices = test_data_indices,
+                                jags_parameters = jags_parameters,
+                                model_results = model_output,
+                                config = config,
+                                results_dir = output_dirs$results,
+                                log_file = log_file)
+
+write_log("___________________________ Generating histograms for prediction scores summary ___________________________", log_file = log_file)
 #generate histograms for the prediction scores summary
 generate_histograms(pred_scores_summary = pred_scores_summary, plots_dir = output_dirs$plots)
 
