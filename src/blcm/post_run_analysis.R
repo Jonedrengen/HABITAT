@@ -199,7 +199,7 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
     )
 
     #output df
-    fzec_summary_results <- data.frame(
+    ci_fzec_results <- data.frame(
         sample_id = input_data[test_data_indices, config$DATA_META$id_column_name],
         isolate_source = isolate_source,
         human_posterior_mean = human_total,
@@ -214,21 +214,61 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
     # add per species summaries
     for (sp in names(species_list)) {
         mcmc_sp <- species_prob_mcmc[, , sp]
-        fzec_summary_results[[paste0(sp, "_posterior_mean")]] <- colMeans(mcmc_sp)
-        fzec_summary_results[[paste0(sp, "_posterior_ci_2.5")]] <- apply(mcmc_sp, 2, quantile, probs = 0.025)
-        fzec_summary_results[[paste0(sp, "_posterior_ci_97.5")]] <- apply(mcmc_sp, 2, quantile, probs = 0.975)
+        ci_fzec_results[[paste0(sp, "_posterior_mean")]] <- colMeans(mcmc_sp)
+        ci_fzec_results[[paste0(sp, "_posterior_ci_2.5")]] <- apply(mcmc_sp, 2, quantile, probs = 0.025)
+        ci_fzec_results[[paste0(sp, "_posterior_ci_97.5")]] <- apply(mcmc_sp, 2, quantile, probs = 0.975)
     }
 
     if (!is.null(results_dir)) {
-        write.csv(fzec_summary_results, file = file.path(results_dir, "pred_scores_CIs_FZEC.csv"), row.names = FALSE)
+        write.csv(ci_fzec_results, file = file.path(results_dir, "pred_scores_CIs_FZEC.csv"), row.names = FALSE)
     }
-    return(fzec_summary_results)
+    
+    return_list <- list(
+        ci_fzec_results = ci_fzec_results,
+        animal_prob_mcmc = animal_prob_mcmc
+    )
+    return(return_list)
 }
 
 # summary - Dans code mostly again
-generate_zoonotic_frac_summary <- function() {
+generate_zoonotic_frac_summary <- function(ci_fzec_results, animal_prob_mcmc, log_file = NULL, results_dir = NULL) {
+    # once again a Dan implementation
 
+    # Calculate proportion (ignoring the NAs from animal samples)
+    fzec_prop <- mean(ci_fzec_results$fzec_status == TRUE, na.rm = TRUE)
+
+    #if no human test isolates, set zoonotic fraction to NA
+    human_test_indices <- which(ci_fzec_results$is_human_test)
+    if (length(human_test_indices) == 0) {
+        write_log("No human test isolates; zoonotic fraction set to NA", level = "WARNING", log_file = log_file)
+        zoonotic_frac_mcmc <- rep(NA_real_, nrow(animal_prob_mcmc))
+    } else {
+        zoonotic_frac_mcmc <- rowMeans(animal_prob_mcmc[, human_test_indices, drop = FALSE])
+    }
+
+
+    # Zoonotic fraction among human test isolates: mean animal probability at each draw
+    # propogate uncertainty
+
+    zoonotic_frac_summary <- data.frame(
+        n_human_test = length(human_test_indices),
+        fzec_prop_cut0.80 = fzec_prop,
+        zoonotic_frac_mean = mean(zoonotic_frac_mcmc),
+        zoonotic_frac_ci_2.5 = quantile(zoonotic_frac_mcmc, probs = 0.025, na.rm = TRUE),
+        zoonotic_frac_ci_97.5 = quantile(zoonotic_frac_mcmc, probs = 0.975, na.rm = TRUE)
+    )
+    write_log(paste0("n_human_test: ", zoonotic_frac_summary$n_human_test), log_file = log_file)
+    write_log(paste0("fzec_prop_cut_above_0800: ", zoonotic_frac_summary$fzec_prop_cut0.80), log_file = log_file)
+    write_log(paste0("zoonotic_frac_mean: ", zoonotic_frac_summary$zoonotic_frac_mean), log_file = log_file)
+    write_log(paste0("zoonotic_ci_0025_lower: ", zoonotic_frac_summary$zoonotic_frac_ci_2.5), log_file = log_file)
+    write_log(paste0("zoonotic_ci_0975_upper: ", zoonotic_frac_summary$zoonotic_frac_ci_97.5), log_file = log_file)
+
+    if (!is.null(results_dir)) {
+        write.csv(zoonotic_frac_summary, file = file.path(results_dir, "zoonotic_frac_summary.csv"), row.names = FALSE)
+    }
+    return(zoonotic_frac_summary)
 }
+
 
 # mat_test <- eta_samples[, test_id]
 

@@ -13,3 +13,9 @@ write_log <- function(message = "no message provided",
   #print(sprintf("[%s] [%s] %s", level, time, message))
 }
 
+log_step <- function(title, log_file = NULL) {
+    separator <- paste(rep("_", 50), collapse = "")
+    write_log(separator, level = "STEP", log_file = log_file)
+    write_log(title, log_file = log_file)   
+}
+

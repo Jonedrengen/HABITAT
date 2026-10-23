@@ -27,8 +27,9 @@ source(file.path(root, "blcm", "jags_data.R"))
 source(file.path(root, "blcm", "run_model.R"))
 source(file.path(root, "blcm", "post_run_analysis.R"))
 source(file.path(root, "blcm", "plotting.R"))
-write_log(sprintf("Root directory: %s", root))
 
+#start time for runtime calculation
+start_time <- Sys.time()
 ########################################################################################
 ####### define command line options, parse arguments and define Global variables #######
 ########################################################################################
@@ -47,15 +48,13 @@ config_file <- args$config
 output_dirs <- write_output_structure(args$output)
 log_file <- file.path(output_dirs$logs, "blcm.log")
 model_file <- file.path(root, "model", "model.bug")
-write_log(sprintf("Outputs: %s", output_dirs$root), log_file = log_file)
-
 #read config and save a copy in output
 config <- read_config(config_file)
 validate_config(config, log_file = log_file)
 file.copy(config_file, file.path(output_dirs$temp, paste0(Sys.time(), "_config.yml")))
-write_log(sprintf("saving config file to: %s", file.path(output_dirs$temp, "used_config.yml")), log_file = log_file)
 
 
+log_step(sprintf("Starting Bayesian analysis at %s", start_time), log_file = log_file)
 ##########################################
 ######## Start Bayesian analysis #########
 ##########################################
@@ -80,7 +79,7 @@ write_log(sprintf("Input data dimensions: %s", paste(dim(raw_input_data), collap
 write_log(sprintf("Number of test samples: %s", length(test_data_indices)), log_file = log_file)
 
 #handle JAGS data assembly
-write_log("___________________________ Starting JAGS data assembly ___________________________", log_file = log_file)
+log_step("Starting JAGS data assembly...", log_file = log_file)
 jags_parameters <- assemble_jags_data(input_data,
                                       id_column_name = config$DATA_META$id_column_name,
                                       training_column_name = config$DATA_META$training_column_name,
@@ -89,16 +88,16 @@ jags_parameters <- assemble_jags_data(input_data,
                                       temp_dir = output_dirs$temp,
                                       log_file = log_file)
 
-write_log("___________________________ Running JAGS model ___________________________", log_file = log_file)
+log_step("Running JAGS model...", log_file = log_file)
 model_output <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, temp_dir = output_dirs$temp, log_file = log_file)
 
 
 
-write_log("___________________________ Summarizing model output ___________________________", log_file = log_file)
+log_step("Summarizing model output...", log_file = log_file)
 #summaries 
 summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, log_file = log_file)
 
-write_log("___________________________ Generating prediction scores raw ___________________________", log_file = log_file)
+log_step("Generating prediction scores raw...", log_file = log_file)
 #generate prediction scores for test samples and save the results
 pred_scores <- generate_pred_scores_raw(input_data = input_data,
                                         eta_samples = model_output$eta_samples,
@@ -107,7 +106,7 @@ pred_scores <- generate_pred_scores_raw(input_data = input_data,
                                         results_dir = output_dirs$results)
 
 
-write_log("___________________________ Generating prediction scores ___________________________", log_file = log_file)
+log_step("Generating prediction scores...", log_file = log_file)
 #TODO: add blcm_analysis.csv, with meta-info, like human/meat grouping, and other stuff
 pred_scores_summary <- generate_pred_scores(input_data = input_data,
                                                 pred_scores = pred_scores,
@@ -116,21 +115,32 @@ pred_scores_summary <- generate_pred_scores(input_data = input_data,
                                                 results_dir = output_dirs$results,
                                                 log_file = log_file)
 
-write_log("___________________________ Generating FZEC summary ___________________________", log_file = log_file)
+log_step("Generating FZEC summary...", log_file = log_file)
 #FZEC summary as per Dan's implementation
-generate_CIs_FZEC_pred_scores(input_data = input_data,
-                                pred_scores_summary = pred_scores_summary,
-                                test_data_indices = test_data_indices,
-                                jags_parameters = jags_parameters,
-                                model_results = model_output,
-                                config = config,
-                                results_dir = output_dirs$results,
-                                log_file = log_file)
+ci_fzec_return_list <- generate_CIs_FZEC_pred_scores(input_data = input_data,
+                                                    pred_scores_summary = pred_scores_summary,
+                                                    test_data_indices = test_data_indices,
+                                                    jags_parameters = jags_parameters,
+                                                    model_results = model_output,
+                                                    config = config,
+                                                    results_dir = output_dirs$results,
+                                                    log_file = log_file)
 
-write_log("___________________________ Generating histograms for prediction scores summary ___________________________", log_file = log_file)
+log_step("Generating zoonotic fraction summary...", log_file = log_file)
+zoonotic_frac_summary <- generate_zoonotic_frac_summary(ci_fzec_results = ci_fzec_return_list$ci_fzec_results, 
+                                                        animal_prob_mcmc = ci_fzec_return_list$animal_prob_mcmc,
+                                                        log_file = log_file,
+                                                        results_dir = output_dirs$results)
+
+log_step("Generating histograms for prediction scores summary...", log_file = log_file)
 #generate histograms for the prediction scores summary
 generate_histograms(pred_scores_summary = pred_scores_summary, plots_dir = output_dirs$plots)
 
+log_step("Run complete...", log_file = log_file)
+write_log(sprintf("Outputs: %s", output_dirs$root), log_file = log_file)
+end_time <- Sys.time()
+time_passed <- difftime(end_time, start_time, units = "mins")
+write_log(sprintf("Runtime: %.2f min", time_passed), log_file = log_file)
 
 
 #delete temporary files if the option is set to TRUE
