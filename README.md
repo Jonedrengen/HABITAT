@@ -37,6 +37,17 @@ sbatch path/to/slurmarize.sh \
   -s path/to/slurm_spec.env
 ```
 
+## Data
+
+One row per sample. Column names are set in `DATA_META` (see [Config](#config)).
+
+- **ID column** (`id_column_name`, default `Sample_Name`): unique sample ID.
+- **Training column** (`training_column_name`, default `training`): `1` = training sample, `0` = test sample to predict.
+- **Class columns** (`class_column_prefix`, default `CL_`): one column per source (e.g. `CL_chicken`). `1` = is sourced from chicken, `0` = is not sourced from chicken... For testing rows training=`0`, these data points will be unknown and filled by the model.
+- **Feature columns** (`feature_column_prefix`, default `FE_`): predictors/features.
+
+To add a source, add its `CL_` column and its identifier under `ANALYSIS.groups`.
+
 ## Config
 
 Settings are in [src/config/config.yml](src/config/config.yml). See [src/config/README.md](src/config/README.md) for details.

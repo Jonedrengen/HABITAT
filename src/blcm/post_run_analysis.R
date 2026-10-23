@@ -29,7 +29,7 @@ group_by_column_headers <- function(column_names, groups, log_file = NULL) {
 }
 
 #returns a named list, mapping each host to the indices of the class columns corresponding to that host
-map_host_to_col_indices <- function(input_data, config) {
+map_host_to_col_indices <- function(input_data, config, log_file = NULL) {
     class_column_names <- names(input_data)[startsWith(names(input_data), config$DATA_META$class_column_prefix)]
     hosts <- c(config$ANALYSIS$groups$human, config$ANALYSIS$groups$meat)
 
@@ -198,17 +198,27 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
         NA
     )
 
+    #output df
     fzec_summary_results <- data.frame(
         sample_id = input_data[test_data_indices, config$DATA_META$id_column_name],
         isolate_source = isolate_source,
-        human_total = human_total,
-        animal_total = animal_total,
-        animal_ci_2.5 = apply(animal_prob_mcmc, 2, quantile, probs = 0.025),     #lower bound:  2.5% quantile
-        animal_ci_97.5 = apply(animal_prob_mcmc, 2, quantile, probs = 0.975),    #upper bound: 97.5% quantile
-        is_human = test_is_human,
+        human_posterior_mean = human_total,
+        animal_posterior_mean = animal_total,
+        animal_posterior_ci_2.5 = apply(animal_prob_mcmc, 2, quantile, probs = 0.025),     #lower bound:  2.5% quantile
+        animal_posterior_ci_97.5 = apply(animal_prob_mcmc, 2, quantile, probs = 0.975),    #upper bound: 97.5% quantile
+        is_human_test = test_is_human,
         fzec_status = fzec_status,
         stringsAsFactors = FALSE
     )
+
+    # add per species summaries
+    for (sp in names(species_list)) {
+        mcmc_sp <- species_prob_mcmc[, , sp]
+        fzec_summary_results[[paste0(sp, "_posterior_mean")]] <- colMeans(mcmc_sp)
+        fzec_summary_results[[paste0(sp, "_posterior_ci_2.5")]] <- apply(mcmc_sp, 2, quantile, probs = 0.025)
+        fzec_summary_results[[paste0(sp, "_posterior_ci_97.5")]] <- apply(mcmc_sp, 2, quantile, probs = 0.975)
+    }
+
     if (!is.null(results_dir)) {
         write.csv(fzec_summary_results, file = file.path(results_dir, "pred_scores_CIs_FZEC.csv"), row.names = FALSE)
     }
