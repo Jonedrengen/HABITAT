@@ -69,3 +69,53 @@ test_danmap_2713_input() {
         -c "$config_file"
     echo
 }
+
+test_fold_1() {
+    echo
+    echo "Running fold_1"
+    Rscript "$source_dir/src/run_bayesian.R" \
+        -i "$data/fold_1.csv" \
+        -o "$output_dir/fold_1_output/" \
+        -c "$config_file"
+    echo
+}
+
+test_fold_2() {
+    echo
+    echo "Running fold_2"
+    Rscript "$source_dir/src/run_bayesian.R" \
+        -i "$data/fold_2.csv" \
+        -o "$output_dir/fold_2_output/" \
+        -c "$config_file"
+    echo
+}
+
+test_fold_3() {
+    echo
+    echo "Running fold_3"
+    Rscript "$source_dir/src/run_bayesian.R" \
+        -i "$data/fold_3.csv" \
+        -o "$output_dir/fold_3_output/" \
+        -c "$config_file"
+    echo
+}
+
+test_fold_4() {
+    echo
+    echo "Running fold_4"
+    Rscript "$source_dir/src/run_bayesian.R" \
+        -i "$data/fold_4.csv" \
+        -o "$output_dir/fold_4_output/" \
+        -c "$config_file"
+    echo
+}
+
+test_fold_5() {
+    echo
+    echo "Running fold_5"
+    Rscript "$source_dir/src/run_bayesian.R" \
+        -i "$data/fold_5.csv" \
+        -o "$output_dir/fold_5_output/" \
+        -c "$config_file"
+    echo
+}

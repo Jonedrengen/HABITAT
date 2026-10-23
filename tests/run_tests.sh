@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
+#SBATCH --job-name=blcm_tests
+#SBATCH --time=12:00:00
+#SBATCH --mem=16G
+#SBATCH --cpus-per-task=4
+#SBATCH --output=slurm_logs/%x_%j.out
 
 
 #set source dir to run tests
-source_dir=/Users/B328695/Desktop/Latent_class_analysis_v1/LCA_v1
+source_dir=/Users/B328695/Desktop/HABITAT/LCA_v1
 
 
 data=$source_dir/data
@@ -21,6 +26,8 @@ run_test() {
     "$test"
 }
 
+
+mkdir -p slurm_logs
 ###################
 #### run tests ####
 ###################

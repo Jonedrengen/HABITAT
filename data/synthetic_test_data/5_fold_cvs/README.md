@@ -23,5 +23,3 @@ Each sample is in the test set of exactly one fold, so across the five folds eve
 - `FE_*`: 19 MGE feature columns (`FE_CL1`, `FE_CL2`, `FE_EL18` to `FE_EL50`), values `0` or `1`.
 
 Features and classes are the same in every fold. Only the `training` column changes.
-
-
