@@ -269,7 +269,7 @@ generate_zoonotic_frac_summary <- function(ci_fzec_results, animal_prob_mcmc, lo
     return(zoonotic_frac_summary)
 }
 
-
+entropy <- function(p) -sum(p * log(p + 1e-12))
 # mat_test <- eta_samples[, test_id]
 
 # v1 <- apply(mat_test,2,function(v) mean(v==1))

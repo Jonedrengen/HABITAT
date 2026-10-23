@@ -123,14 +123,14 @@ ci_fzec_return_list <- generate_CIs_FZEC_pred_scores(input_data = input_data,
                                                     jags_parameters = jags_parameters,
                                                     model_results = model_output,
                                                     config = config,
-                                                    results_dir = output_dirs$results,
+                                                    results_dir = output_dirs$more_results,
                                                     log_file = log_file)
 
 log_step("Generating zoonotic fraction summary...", log_file = log_file)
 zoonotic_frac_summary <- generate_zoonotic_frac_summary(ci_fzec_results = ci_fzec_return_list$ci_fzec_results, 
                                                         animal_prob_mcmc = ci_fzec_return_list$animal_prob_mcmc,
                                                         log_file = log_file,
-                                                        results_dir = output_dirs$results)
+                                                        results_dir = output_dirs$more_results)
 
 log_step("Generating histograms for prediction scores summary...", log_file = log_file)
 #generate histograms for the prediction scores summary
