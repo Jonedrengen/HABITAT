@@ -115,7 +115,7 @@ generate_pred_scores_raw <- function(input_data, eta_samples, config, log_file =
 }
 
 #placeholder for future code
-generate_pred_scores <- function(input_data, pred_scores, test_data_indices, config, log_file = NULL, results_dir = NULL) {
+generate_pred_scores <- function(input_data, pred_scores, features, test_data_indices, config, log_file = NULL, results_dir = NULL) {
     write_log("writing pred_scores (with some additional info)", log_file = log_file)
     grouped_column_headers <- group_by_column_headers(colnames(pred_scores), config$ANALYSIS$groups, log_file = log_file)
     isolate_source <- generate_isolate_source(input_data, test_data_indices, config, log_file = log_file)
@@ -132,7 +132,8 @@ generate_pred_scores <- function(input_data, pred_scores, test_data_indices, con
         Human_class     = ifelse(rowSums(pred_scores[, grouped_column_headers$human, drop = FALSE]) >= 0.8, 1, 0),
         Indeterminate   = ifelse(rowSums(pred_scores[, grouped_column_headers$human, drop = FALSE]) < 0.8 & rowSums(pred_scores[, grouped_column_headers$meat, drop = FALSE]) < 0.8, 1, 0),
         Meat_class      = ifelse(rowSums(pred_scores[, grouped_column_headers$meat, drop = FALSE]) >= 0.8, 1, 0),
-        other_pred      = rowSums(pred_scores[, !(colnames(pred_scores) %in% c(grouped_column_headers$meat, grouped_column_headers$human)), drop = FALSE])
+        other_pred      = rowSums(pred_scores[, !(colnames(pred_scores) %in% c(grouped_column_headers$meat, grouped_column_headers$human)), drop = FALSE]),
+        features[test_data_indices,]
     )
     write.csv(pred_scores_summary, file = file.path(results_dir, "pred_scores.csv"))
     return(pred_scores_summary)

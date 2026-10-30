@@ -109,6 +109,8 @@ pred_scores <- generate_pred_scores_raw(input_data = input_data,
 log_step("Generating prediction scores...", log_file = log_file)
 #TODO: add blcm_analysis.csv, with meta-info, like human/meat grouping, and other stuff
 pred_scores_summary <- generate_pred_scores(input_data = input_data,
+                                                features = jags_parameters$Y,
+
                                                 pred_scores = pred_scores,
                                                 test_data_indices = test_data_indices,
                                                 config = config,
@@ -136,12 +138,12 @@ log_step("Generating histograms for prediction scores summary...", log_file = lo
 #generate histograms for the prediction scores summary
 generate_histograms(pred_scores_summary = pred_scores_summary, plots_dir = output_dirs$plots)
 
+
 log_step("Run complete...", log_file = log_file)
 write_log(sprintf("Outputs: %s", output_dirs$root), log_file = log_file)
 end_time <- Sys.time()
 time_passed <- difftime(end_time, start_time, units = "mins")
 write_log(sprintf("Runtime: %.2f min", time_passed), log_file = log_file)
-
 
 #delete temporary files if the option is set to TRUE
 if (config$OPTIONS$delete_temp_files) {

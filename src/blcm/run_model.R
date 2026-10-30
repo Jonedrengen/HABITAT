@@ -2,7 +2,8 @@ run_model <- function(jags_parameters, config, model_file, log_file = NULL, temp
     #outputs results in a list of objects
     
     write_log(sprintf("Running model with file: %s", model_file), log_file = log_file)
-    #init function for chains
+    
+    # Initialize 'a' with length M_fit (dispersed across chains so R-hat is informative) - Dan
     in_init <- function(M_fit=jags_parameters$M_fit) {
         list(a = rnorm(M_fit, 0, 0.5))
     }
