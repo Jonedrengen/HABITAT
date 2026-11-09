@@ -115,7 +115,7 @@ validate_DATA_META <- function(data_meta, log_file = NULL) {
     }
 }
 
-validate_ANALYSIS <- function(analysis_params, log_file = NULL) {
+validate_ANALYSIS <- function(raw_input_data, analysis_params, log_file = NULL) {
     if (is.null(analysis_params)) {
         write_log("ANALYSIS params missing.", level = "ERROR", log_file = log_file)
         stop("ANALYSIS params missing.")
@@ -139,7 +139,15 @@ validate_ANALYSIS <- function(analysis_params, log_file = NULL) {
         stop("Group 2 is empty.")
     }
 
-
+    sub_groups <- unlist(groups, use.names = FALSE)
+    col_names <- colnames(raw_input_data)
+    for (sg in sub_groups) {
+        if (!any(grepl(sg, col_names, ignore.case = TRUE))) {
+            message <- paste("Sub group:", sg, "not found in input data column header. Check if groups match header")
+            write_log(message, level = "ERROR", log_file = log_file)
+            stop(message)
+        }
+    }
 }
 
 
