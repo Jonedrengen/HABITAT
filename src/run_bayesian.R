@@ -139,11 +139,20 @@ log_step("Generating histograms for prediction scores summary...", log_file = lo
 generate_histograms(pred_scores_summary = pred_scores_summary, plots_dir = output_dirs$plots)
 
 
+
 log_step("Run complete...", log_file = log_file)
 write_log(sprintf("Outputs: %s", output_dirs$root), log_file = log_file)
 end_time <- Sys.time()
 time_passed <- difftime(end_time, start_time, units = "mins")
 write_log(sprintf("Runtime: %.2f min", time_passed), log_file = log_file)
+
+#render html
+rmarkdown::render(
+    input = file.path(root, "report", "output_overview.Rmd"),
+    output_file = "overview.html",
+    output_dir = output_dirs$root,
+    params = list(output_dir = normalizePath(output_dirs$root))
+)
 
 #delete temporary files if the option is set to TRUE
 if (config$OPTIONS$delete_temp_files) {

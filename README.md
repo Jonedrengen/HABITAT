@@ -90,18 +90,36 @@ module_to_load=path/to/module         # leave empty unless you need it, example:
 
 ```text
 LCA_v1/
-├── README.md
 ├── LCA_env_v1.yml                  # Conda environment
+├── LICENSE
+├── README.md
+├── data/                           # datasets and test fixtures
+├── docs/                           # additional documentation
 ├── src/
+│   ├── base_training/
+│   │   ├── SB27_and_15_validation.csv
+│   │   └── example/
+│   │       └── example_input.csv
+│   ├── blcm/
+│   │   ├── data_reader.R           # input and configuration validation
+│   │   ├── jags_data.R             # JAGS data assembly
+│   │   ├── paper_validation_metrics.R
+│   │   ├── plotting.R
+│   │   ├── post_run_analysis.R
+│   │   └── run_model.R
+│   ├── config/
+│   │   ├── README.md
+│   │   ├── config.yml
+│   │   └── slurm_spec.env
+│   ├── model/
+│   │   └── model.bug               # JAGS model
+│   ├── utils/
+│   │   ├── config_utils.R
+│   │   ├── logging.R
+│   │   └── write_output_dirs.R
 │   ├── run_bayesian.R              # entry point
-│   ├── slurmarize.sh               # Slurm wrapper
-│   ├── config/                     # config.yml, slurm_spec.env
-│   ├── blcm/                       # input checks, JAGS data, summaries, plots
-│   ├── model/model.bug             # the JAGS model
-│   ├── utils/                      # logging and output folder helpers
-│   └── base_training/example/      # example input
-│
-├──
+│   └── slurmarize.sh               # Slurm wrapper
+└── tests/                          # test scripts and example outputs
 ```
 
 ## Output
@@ -113,15 +131,20 @@ output/
 ├── results/
 │   ├── pred_scores_raw.csv
 │   ├── pred_scores.csv
+│   ├── more_results/
+│   │   ├── pred_scores_CIs_FZEC.csv
+│   │   └── zoonotic_frac_summary.csv
 │   └── plots/
-│       └── histogram.png
+│       ├── histogram.png
+│       └── <source>_histogram.png  # one per isolate source
 └── temp/
     ├── input_data.csv
     ├── training_data.csv
     ├── test_data.csv
     ├── eta_vector.csv
-    ├── feature_matrix.csv
     ├── bugs_summary_table.csv
     └── <timestamp>_config.yml
 ```
 
+The `temp/` directory is removed at the end of a successful run when
+`OPTIONS.delete_temp_files` is `TRUE`.

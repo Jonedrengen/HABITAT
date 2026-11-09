@@ -21,7 +21,5 @@ default:
       meat:
         - "chicken"
         - "pork"
-        - "beef"
-        - "turkey"
   OPTIONS:
     delete_temp_files: FALSE

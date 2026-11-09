@@ -1,0 +1,35 @@
+---
+title: "Bayesian analysis overview"
+output: html_document
+params:
+  output_dir: "."
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+results_dir <- file.path(params$output_dir, "results")
+```
+
+## Prediction scores
+
+```{r predscores}
+scores <- read.csv(file.path(results_dir, "pred_scores.csv"))
+knitr::kable(head(scores, 10))
+```
+
+## Prediction histogram
+
+```{r predhist}
+knitr::include_graphics(file.path(results_dir, "plots", "histogram.png"))
+```
+
+
+## Zoonotic fraction
+
+```{r zoonotic}
+summary <- read.csv(
+  file.path(results_dir, "more_results", "zoonotic_frac_summary.csv")
+)
+knitr::kable(summary)
+```

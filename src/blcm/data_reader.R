@@ -164,7 +164,7 @@ validate_data <- function(raw_input_data, config, log_file = NULL) {
 
     validate_JAGS_DATA(config$JAGS_DATA, log_file = log_file)
     validate_DATA_META(config$DATA_META, log_file = log_file)
-    validate_ANALYSIS(config$ANALYSIS, log_file = log_file)
+    validate_ANALYSIS(raw_input_data, config$ANALYSIS, log_file = log_file)
     return(raw_input_data)
 }
 
