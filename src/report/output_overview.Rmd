@@ -49,7 +49,7 @@ if (nrow(scores) > 0) {
   counts <- data.frame(table(scores$isolate_source))
   colnames(counts) <- c("host", "count")
   predictions_overview <- data.frame(counts)
-  knitr::kable(predictions_overview, caption = "`host counts among test set`")
+  knitr::kable(predictions_overview, caption = "`host counts in test set`")
 } else {
   warning("pred scores has no rows")
 }
@@ -86,8 +86,10 @@ if (nrow(zoonotic_frac) > 0) {
 ## \textsf{meta information}
 
 ```{r jags_overview}
+
+
 jags_parameters <- data.frame(
-  seed = config$JAGS_DATA$seed,
+  seed = if (is.null(config$JAGS_DATA$seed)) NA_integer_ else config$JAGS_DATA$seed,
   chains = config$JAGS_DATA$chains,
   iterations = config$JAGS_DATA$iterations,
   burnin = config$JAGS_DATA$burn_in,
@@ -97,10 +99,10 @@ jags_parameters <- data.frame(
 knitr::kable(jags_parameters, caption = "`Jags parameters`")
 ```
 
-`for R-hat, values should be < 1.1`
+
 ```{r r_hat}
 rhat_summary <- read_csv_return_df(file.path(temp_dir, "rhat_summary.csv"))
-knitr::kable(rhat_summary, caption = "`R-hat summary`")
+knitr::kable(rhat_summary, caption = "`R-hat summary - should be < 1.1`")
 ```
 
 ```{r feature_counts}
