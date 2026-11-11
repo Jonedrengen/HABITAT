@@ -50,8 +50,7 @@ log_file <- file.path(output_dirs$logs, "blcm.log")
 model_file <- file.path(root, "model", "model.bug")
 #read config and save a copy in output
 config <- read_config(config_file)
-validate_config(config, log_file = log_file)
-file.copy(config_file, file.path(output_dirs$temp, paste0(Sys.time(), "_config.yml")))
+file.copy(config_file, file.path(output_dirs$temp, paste0(Sys.Date(), "_config.yml")))
 
 
 log_step(sprintf("Starting Bayesian analysis at %s", start_time), log_file = log_file)
@@ -88,6 +87,9 @@ jags_parameters <- assemble_jags_data(input_data,
                                       temp_dir = output_dirs$temp,
                                       log_file = log_file)
 
+#count features per column for test data
+feature_counts <- count_feature_proportions(feature_matrix = jags_parameters$Y[test_data_indices,], temp_dir = output_dirs$temp)
+
 log_step("Running JAGS model...", log_file = log_file)
 model_output <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, temp_dir = output_dirs$temp, log_file = log_file)
 
@@ -95,7 +97,7 @@ model_output <- run_model(jags_parameters = jags_parameters, config = config, mo
 
 log_step("Summarizing model output...", log_file = log_file)
 #summaries 
-summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, log_file = log_file)
+rhat_symmary <- summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, temp_dir = output_dirs$temp, log_file = log_file)
 
 log_step("Generating prediction scores raw...", log_file = log_file)
 #generate prediction scores for test samples and save the results
@@ -107,10 +109,10 @@ pred_scores <- generate_pred_scores_raw(input_data = input_data,
 
 
 log_step("Generating prediction scores...", log_file = log_file)
-#TODO: add blcm_analysis.csv, with meta-info, like human/meat grouping, and other stuff
+
+
 pred_scores_summary <- generate_pred_scores(input_data = input_data,
                                                 features = jags_parameters$Y,
-
                                                 pred_scores = pred_scores,
                                                 test_data_indices = test_data_indices,
                                                 config = config,
@@ -134,6 +136,9 @@ zoonotic_frac_summary <- generate_zoonotic_frac_summary(ci_fzec_results = ci_fze
                                                         log_file = log_file,
                                                         results_dir = output_dirs$more_results)
 
+#write csv infos
+write_csv_infos(input_data = input_data, config = config, temp_dir = output_dirs$temp, log_file = log_file)
+
 log_step("Generating histograms for prediction scores summary...", log_file = log_file)
 #generate histograms for the prediction scores summary
 generate_histograms(pred_scores_summary = pred_scores_summary, plots_dir = output_dirs$plots)
@@ -144,12 +149,13 @@ log_step("Run complete...", log_file = log_file)
 write_log(sprintf("Outputs: %s", output_dirs$root), log_file = log_file)
 end_time <- Sys.time()
 time_passed <- difftime(end_time, start_time, units = "mins")
-write_log(sprintf("Runtime: %.2f min", time_passed), log_file = log_file)
+time_message <- sprintf("Runtime: %.2f min", time_passed)
+write_log(time_message, log_file = log_file)
 
 #render html
 rmarkdown::render(
     input = file.path(root, "report", "output_overview.Rmd"),
-    output_file = "overview.html",
+    output_file = "overview.pdf",
     output_dir = output_dirs$root,
     params = list(output_dir = normalizePath(output_dirs$root))
 )

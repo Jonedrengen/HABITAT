@@ -1,6 +1,6 @@
 ---
-title: "Bayesian analysis overview"
-output: html_document
+title: '\textsf{HABITAT report}'
+output: pdf_document
 params:
   output_dir: "."
 ---
@@ -9,27 +9,108 @@ params:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 results_dir <- file.path(params$output_dir, "results")
+temp_dir <- file.path(params$output_dir, "temp")
+
+
+#function to read csv and return df
+read_csv_return_df <- function(file_path) {
+  if(!file.exists(file_path)) {
+    warning("File not found: ", basename(file_path))
+    return(data.frame(NULL))
+  }
+  data.frame(read.csv(file_path))
+}
 ```
 
-## Prediction scores
+## \textsf{model inputs}
 
-```{r predscores}
+```{r inputs}
+training <- read_csv_return_df(file.path(temp_dir, "training_data.csv"))
+testing <- read_csv_return_df(file.path(temp_dir, "test_data.csv"))
+features <- read_csv_return_df(file.path(temp_dir, "feature_matrix.csv"))
+classes <- read_csv_return_df(file.path(temp_dir, "class_matrix.csv"))
+
+kable_data <- data.frame(
+  n_train = nrow(training),
+  n_test = nrow(testing),
+  n_classes = ncol(classes),
+  n_features = ncol(features)
+  )
+
+knitr::kable(kable_data, 
+             caption = "`model inputs`"
+             )
+```
+
+
+```{r predscores_overview}
 scores <- read.csv(file.path(results_dir, "pred_scores.csv"))
-knitr::kable(head(scores, 10))
+if (nrow(scores) > 0) {
+  counts <- data.frame(table(scores$isolate_source))
+  colnames(counts) <- c("host", "count")
+  predictions_overview <- data.frame(counts)
+  knitr::kable(predictions_overview, caption = "`host counts among test set`")
+} else {
+  warning("pred scores has no rows")
+}
 ```
 
-## Prediction histogram
+## \textsf{histograms}
 
-```{r predhist}
-knitr::include_graphics(file.path(results_dir, "plots", "histogram.png"))
+```{r predhist, out.width='90%', fig.align='center'}
+files <- list.files(file.path(results_dir, "plots"), pattern = "png", full.names = TRUE)
+
+if (length(files) > 0) {
+  knitr::include_graphics(files, dpi = 150, auto_pdf = TRUE)
+} else {
+  warning("No plots found.")
+}
 ```
 
-
-## Zoonotic fraction
+## \textsf{zoonotic fraction}
 
 ```{r zoonotic}
-summary <- read.csv(
-  file.path(results_dir, "more_results", "zoonotic_frac_summary.csv")
-)
-knitr::kable(summary)
+zoonotic_frac <- read_csv_return_df(file.path(results_dir, "more_results", "zoonotic_frac_summary.csv"))
+if (nrow(zoonotic_frac) > 0) {
+  summary <- data.frame(n_human = zoonotic_frac$n_human_test,
+                        fzec_prop = zoonotic_frac$fzec_prop_cut0.80,
+                        fzec_frac_mean = round(zoonotic_frac$zoonotic_frac_mean,3),
+                        ci_low = round(zoonotic_frac$zoonotic_frac_ci_2.5,3),
+                        ci_high = round(zoonotic_frac$zoonotic_frac_ci_97.5,3))
+  knitr::kable(summary, caption = "`zoonotic fraction`")
+} else {
+  warning("zoonotic fraction has no rows")
+}
 ```
+
+## \textsf{meta information}
+
+```{r jags_overview}
+jags_parameters <- data.frame(
+  seed = config$JAGS_DATA$seed,
+  chains = config$JAGS_DATA$chains,
+  iterations = config$JAGS_DATA$iterations,
+  burnin = config$JAGS_DATA$burn_in,
+  thin = config$JAGS_DATA$thin,
+  saved_params = paste(config$JAGS_DATA$save_parameters, collapse=",")
+  )
+knitr::kable(jags_parameters, caption = "`Jags parameters`")
+```
+
+`for R-hat, values should be < 1.1, if not, there might be convergence issues.`
+```{r r_hat}
+rhat_summary <- read_csv_return_df(file.path(temp_dir, "rhat_summary.csv"))
+knitr::kable(rhat_summary, caption = "`R-hat summary`")
+```
+
+## credits and acknowledgements
+
+Thanks to all contributors.
+
+- Daniel Park
+- Lance Price
+- Maliha Aziz
+- Marc Stegger
+- Louise Roer
+- Jon Slotved
+- Yashan Wang

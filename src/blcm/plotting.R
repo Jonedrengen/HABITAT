@@ -7,16 +7,15 @@ default_meat_hist_config <- list(
     intercepts          = c(0.2, 0.8),
     annotate_positions  = c(0.1, 0.5, 0.9),
     linetype            = "dashed",
-    x_label             = "Predicted Food-Animal Origin",
-    y_label             = "Frequency",
-    title               = "Histogram of Predicted Food-Animal Origin",
+    x_label             = "aggregated posteriors",
+    y_label             = "Isolates",
+    title               = "",
+    base_size           = 20,
     human_threshold     = 0.2,
     food_animal_threshold = 0.8,
     groups              = c("Human", "Indeterminate", "Animal"),
-    group_color_map = c(
-        "Human" = "goldenrod1",
-        "Indeterminate" = "grey70",
-        "Animal" = "red3"),
+    annotate_size       = 6,
+    group_color_map     = c("Human" = "goldenrod1", "Indeterminate" = "grey70", "Animal" = "red3"),
     file_save_name      = "histogram.png",
     width               = 16,
     height              = 12
@@ -64,11 +63,11 @@ generate_hist <- function(Meat_pred_vector, hist_config = default_meat_hist_conf
     histogram_plot <- ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$Meat_pred, fill = .data$group)) +
                             ggplot2::geom_histogram(binwidth = hist_config$bin_width, boundary = hist_config$boundary) +
                             ggplot2::geom_vline(xintercept = hist_config$intercepts, linetype = hist_config$linetype) +
-                            ggplot2::annotate("text", x = hist_config$annotate_positions, y = Inf, label = labels, vjust = 1.5) +
+                            ggplot2::annotate("text", x = hist_config$annotate_positions, y = Inf, label = labels, vjust = 1.5, size = hist_config$annotate_size) +
                             ggplot2::scale_fill_manual(values = hist_config$group_color_map, drop = FALSE) +
                             ggplot2::scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) +
                             ggplot2::labs(x = hist_config$x_label, y = hist_config$y_label, title = hist_config$title) +
-                            ggplot2::theme_classic() +
+                            ggplot2::theme_classic(base_size = hist_config$base_size) +
                             ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5), legend.position = "none")
     
     if (!is.null(plots_dir)) {
@@ -94,7 +93,6 @@ generate_hist_by_species <- function(pred_scores_summary, hist_config = default_
         #change the histogram configuration for the current source if needed
         hist_config_current <- hist_config
         hist_config_current$file_save_name <- sprintf("%s_%s", source, hist_config$file_save_name)
-        hist_config_current$title <- sprintf("%s - %s", source, hist_config$title) 
         hist_config_current$x_label <- sprintf("%s - %s", hist_config$x_label, paste0("(",source,")"))
 
         # subset the data for the current source and generate the histogram
@@ -110,8 +108,11 @@ generate_hist_by_species <- function(pred_scores_summary, hist_config = default_
 
 generate_histograms <- function(pred_scores_summary, plots_dir = NULL, log_file = NULL) {
     write_log("generating histograms for prediction scores summary...", log_file = log_file)
+    all_hist_config <- default_meat_hist_config
+    all_hist_config$file_save_name <- paste0("all_", all_hist_config$file_save_name)
+    all_hist_config$x_label <- paste0(all_hist_config$x_label, " (all)")
     generate_hist(Meat_pred_vector = pred_scores_summary$meat_pred,
-                  hist_config = default_meat_hist_config,
+                  hist_config = all_hist_config,
                   plots_dir = plots_dir,
                   log_file = log_file)
 
@@ -120,6 +121,4 @@ generate_histograms <- function(pred_scores_summary, plots_dir = NULL, log_file 
                            hist_config = default_meat_hist_config,
                            plots_dir = plots_dir,
                            log_file = log_file)
-    
-
 }
