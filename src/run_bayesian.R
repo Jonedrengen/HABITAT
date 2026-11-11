@@ -23,6 +23,7 @@ source(file.path(root, "utils", "logging.R"))
 source(file.path(root, "utils", "config_utils.R"))
 source(file.path(root, "utils", "write_output_dirs.R"))
 source(file.path(root, "blcm", "data_reader.R"))
+source(file.path(root, "blcm", "pre_run_analysis.R"))
 source(file.path(root, "blcm", "jags_data.R"))
 source(file.path(root, "blcm", "run_model.R"))
 source(file.path(root, "blcm", "post_run_analysis.R"))
@@ -88,7 +89,7 @@ jags_parameters <- assemble_jags_data(input_data,
                                       log_file = log_file)
 
 #count features per column for test data
-feature_counts <- count_feature_proportions(feature_matrix = jags_parameters$Y[test_data_indices,], temp_dir = output_dirs$temp)
+feature_counts <- count_feature_proportions(test_feature_matrix = jags_parameters$Y[test_data_indices,], temp_dir = output_dirs$temp)
 
 log_step("Running JAGS model...", log_file = log_file)
 model_output <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, temp_dir = output_dirs$temp, log_file = log_file)

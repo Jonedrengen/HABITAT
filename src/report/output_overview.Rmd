@@ -55,7 +55,7 @@ if (nrow(scores) > 0) {
 }
 ```
 
-## \textsf{histograms}
+## \textsf{posterior distribution}
 
 ```{r predhist, out.width='90%', fig.align='center'}
 files <- list.files(file.path(results_dir, "plots"), pattern = "png", full.names = TRUE)
@@ -97,12 +97,20 @@ jags_parameters <- data.frame(
 knitr::kable(jags_parameters, caption = "`Jags parameters`")
 ```
 
-`for R-hat, values should be < 1.1, if not, there might be convergence issues.`
+`for R-hat, values should be < 1.1`
 ```{r r_hat}
 rhat_summary <- read_csv_return_df(file.path(temp_dir, "rhat_summary.csv"))
 knitr::kable(rhat_summary, caption = "`R-hat summary`")
 ```
 
+```{r feature_counts}
+fc <- read_csv_return_df(file.path(temp_dir, "feature_counts.csv"))
+if (nrow(fc) > 0) {
+  knitr::kable(fc, caption = "`features`")
+} else {
+  warning("feature counts missing.")
+}
+```
 ## credits and acknowledgements
 
 Thanks to all contributors.

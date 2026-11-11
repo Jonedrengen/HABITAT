@@ -20,21 +20,6 @@ summarize_rhat <- function(bugs_summary_table, temp_dir = NULL, log_file = NULL)
     return(rhat_summary)
 }
 
-count_feature_proportions <- function(feature_matrix = NULL, temp_dir = NULL) {
-    # count features per column of the test data
-    # input: feature_matrix
-    # output: counts per column
-    if (!is.null(feature_matrix) && nrow(feature_matrix) > 0) {
-        col_counts <- colSums(feature_matrix)
-        if (!is.null(temp_dir)) {
-            write.csv(col_counts, file.path(temp_dir, "feature_counts.csv"))
-        }
-        return(col_counts)
-    } else {
-        stop("No test data for counting")
-    }
-}
-
 group_by_column_headers <- function(column_names, groups, temp_dir = NULL, log_file = NULL) {
     # group column headers by host type
     # input:  column_names = c("Cl_human_CL1", "Cl_human_CL2", "Cl_chicken_CL1", "Cl_chicken_CL2", "Cl_pork_CL1")
