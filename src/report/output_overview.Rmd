@@ -22,7 +22,7 @@ read_csv_return_df <- function(file_path) {
 }
 ```
 
-## \textsf{model inputs}
+## model inputs
 
 ```{r inputs}
 training <- read_csv_return_df(file.path(temp_dir, "training_data.csv"))
@@ -55,7 +55,7 @@ if (nrow(scores) > 0) {
 }
 ```
 
-## \textsf{posterior distribution}
+## posterior distribution
 
 ```{r predhist, out.width='90%', fig.align='center'}
 files <- list.files(file.path(results_dir, "plots"), pattern = "png", full.names = TRUE)
@@ -67,7 +67,7 @@ if (length(files) > 0) {
 }
 ```
 
-## \textsf{zoonotic fraction}
+## zoonotic fraction
 
 ```{r zoonotic}
 zoonotic_frac <- read_csv_return_df(file.path(results_dir, "more_results", "zoonotic_frac_summary.csv"))
@@ -83,7 +83,7 @@ if (nrow(zoonotic_frac) > 0) {
 }
 ```
 
-## \textsf{meta information}
+## meta information
 
 ```{r jags_overview}
 
@@ -108,7 +108,7 @@ knitr::kable(rhat_summary, caption = "`R-hat summary - should be < 1.1`")
 ```{r feature_counts}
 fc <- read_csv_return_df(file.path(temp_dir, "feature_counts.csv"))
 if (nrow(fc) > 0) {
-  knitr::kable(fc, caption = "`features`")
+  knitr::kable(fc, caption = "`features in test samples`")
 } else {
   warning("feature counts missing.")
 }
