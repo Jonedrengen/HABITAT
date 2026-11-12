@@ -2,8 +2,8 @@ default:
   JAGS_DATA:
     seed: NULL #set NULL for random seed (testing is 69)
     chains: 3
-    iterations: 10000
-    burn_in: 5000
+    iterations: 500
+    burn_in: 100
     thin: 1
     save_parameters:
       - "pi"
