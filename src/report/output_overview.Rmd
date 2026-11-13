@@ -124,3 +124,4 @@ Thanks to all contributors.
 - Louise Roer
 - Jon Slotved
 - Yashan Wang
+- Kara Schmidlin
