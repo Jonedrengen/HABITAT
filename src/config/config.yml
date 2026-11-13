@@ -23,3 +23,4 @@ default:
         - "pork"
   OPTIONS:
     delete_temp_files: FALSE
+    advanced_analysis: TRUE

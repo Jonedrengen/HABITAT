@@ -19,3 +19,4 @@ dependencies:
   - r-testthat
   - r-treemapify
   - r-config
+  - r-yardstick
