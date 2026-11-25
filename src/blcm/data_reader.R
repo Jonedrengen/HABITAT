@@ -6,6 +6,12 @@ validate_JAGS_DATA <- function(jags_data) {
     if (is.null(jags_data)) {
         stop("JAGS_DATA section is missing in the config.")
     }
+    if (jags_data$chains < 2L) {
+        stop("Chains must be at least 2.")
+    }
+    if (jags_data$iterations != 10000 && jags_data$burn_in != 5000) {
+        warning(sprintf("we recommend 10000 iterations and 5000 burn-in. Current: %d/%d", jags_data$iterations, jags_data$burn_in))
+    }
 }
 
 validate_config_sections <- function(config) {
