@@ -1,7 +1,5 @@
-run_model <- function(jags_parameters, config, model_file, log_file = NULL, temp_dir = NULL) {
+run_model <- function(jags_parameters, config, model_file, temp_dir = NULL) {
     #outputs results in a list of objects
-    
-    write_log(sprintf("Running model with file: %s", model_file), log_file = log_file)
     
     # Initialize 'a' with length M_fit (dispersed across chains so R-hat is informative) - Dan
     in_init <- function(M_fit=jags_parameters$M_fit) {
@@ -19,7 +17,7 @@ run_model <- function(jags_parameters, config, model_file, log_file = NULL, temp
                                n.thin             = config$JAGS_DATA$thin,
                                DIC                = FALSE)
     model_output_size <- format(object.size(raw_model_output), units = "Mb")
-    write_log(paste("model finished with size:", model_output_size), log_file = log_file)
+    print(paste("model size:", model_output_size))
     
     model_results <- list(
                             raw_model_output = raw_model_output,
@@ -34,7 +32,6 @@ run_model <- function(jags_parameters, config, model_file, log_file = NULL, temp
               file = file.path(temp_dir, "bugs_summary_table.csv"),
               row.names = TRUE)
     }
-    write_log(paste("Model outputs: ", paste(names(model_results), collapse = ", ")), log_file = log_file)
     return(model_results)
 }
 

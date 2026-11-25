@@ -1,9 +1,8 @@
 
-summarize_rhat <- function(bugs_summary_table, temp_dir = NULL, log_file = NULL) {
+summarize_rhat <- function(bugs_summary_table, temp_dir = NULL) {
     # summarize Rhat for pi and p rows
     # input: 
     pi_and_p_rows <- bugs_summary_table[grep("^(pi|p)\\[", rownames(bugs_summary_table)), "Rhat"]
-    write_log("Summary of pi and p Rhat values: (we want < 1.1)", log_file = log_file)
     rhat_summary_table <- summary(pi_and_p_rows)
     
     rhat_summary <- data.frame(min = round(rhat_summary_table[["Min."]], 5),
@@ -16,19 +15,18 @@ summarize_rhat <- function(bugs_summary_table, temp_dir = NULL, log_file = NULL)
     if (!is.null(temp_dir)) {
         write.csv(rhat_summary, file.path(temp_dir, "rhat_summary.csv"), row.names = FALSE)
     }
-    write_log(paste0(capture.output(rhat_summary)), log_file = log_file)
     return(rhat_summary)
 }
 
-group_by_column_headers <- function(column_names, groups, temp_dir = NULL, log_file = NULL) {
+group_by_column_headers <- function(column_names, groups, temp_dir = NULL) {
     # group column headers by host type
     # input:  column_names = c("Cl_human_CL1", "Cl_human_CL2", "Cl_chicken_CL1", "Cl_chicken_CL2", "Cl_pork_CL1")
     #         groups = list(human = "human", meat = c("chicken", "pork"))
     # output: list(human = c("Cl_human_CL1", "Cl_human_CL2"),
     #              meat = c("Cl_chicken_CL1", "Cl_chicken_CL2", "Cl_pork_CL1"))
-    write_log("Grouping column headers to meat or human hosts", log_file = log_file)
     # Iterate over column_headers, then iterate over groups and see if an identifier matches the column header, if so, assign the column_header to that group
-    grouped_column_headers <- list()
+    grouped_column_headers <- list(human = character(),
+                                   meat = character())
     
     for (column in column_names) {
         column_header <- column[1]
@@ -36,8 +34,6 @@ group_by_column_headers <- function(column_names, groups, temp_dir = NULL, log_f
         for (group_name in names(groups)) {
             for (id in groups[[group_name]]) {
                 if (grepl(id, column_header, ignore.case = TRUE)) {
-                    group_message <- paste0("Column: ", column_header, " grouped to: ", group_name)
-                    write_log(group_message, log_file = log_file)
                     grouped_column_headers[[group_name]] <- c(grouped_column_headers[[group_name]], column_header)
                 }
             }
@@ -53,7 +49,7 @@ group_by_column_headers <- function(column_names, groups, temp_dir = NULL, log_f
 }
 
 
-map_host_to_col_indices <- function(input_data, config, temp_dir = NULL, log_file = NULL) {
+map_host_to_col_indices <- function(input_data, config, temp_dir = NULL) {
     # might look like (should probably be more robust or readable):
     # input:    cols[Cl_human_CL1, Cl_human_CL2, Cl_chicken_CL1,CL_chicken_CL2, Cl_pork_CL1]
     # output:   list(human = c(1,2), chicken = c(3,4), pork = c(5))
@@ -85,16 +81,12 @@ map_host_to_col_indices <- function(input_data, config, temp_dir = NULL, log_fil
 }
 
 # returns a vector with host assignments for each test data isolate (like: "human", "chicken", "pork")
-generate_isolate_source <- function(input_data, test_data_indices, config, log_file = NULL) {
-    write_log("Generating host mapping for test data isolates...", log_file = log_file)
+generate_isolate_source <- function(input_data, test_data_indices, config) {
     isolate_source <- rep(NA_character_, length(test_data_indices))
-
     hosts <- c(config$ANALYSIS$groups$human, config$ANALYSIS$groups$meat)
-    write_log(paste0("Hosts: ", paste(hosts, collapse = ", ")), log_file = log_file)
 
     #if row value == 1 and column header matches a host, assign that host to the isolate_source
     class_column_names <- names(input_data)[startsWith(names(input_data), config$DATA_META$class_column_prefix)]
-    write_log(paste0("Class column names: ", paste(class_column_names, collapse = ", ")), log_file = log_file)
     class_columns <- input_data[test_data_indices, class_column_names, drop = FALSE]
 
     # Iterate over each test data isolate and assign the host based on class columns
@@ -106,7 +98,6 @@ generate_isolate_source <- function(input_data, test_data_indices, config, log_f
             }
         }
     }
-    write_log("renaming based on host groups..", log_file = log_file)
     #this is just a rename step...
     for (i in seq_along(isolate_source)) {
         for (host in hosts) {
@@ -119,13 +110,12 @@ generate_isolate_source <- function(input_data, test_data_indices, config, log_f
     return(isolate_source)
 }
 
-generate_pred_scores_raw <- function(input_data, eta_samples, config, log_file = NULL, results_dir = NULL) {
+generate_pred_scores_raw <- function(input_data, eta_samples, config, results_dir = NULL) {
     test_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 0)
     latent_class_labels <- names(input_data)[startsWith(names(input_data), config$DATA_META$class_column_prefix)]
     n_classes <- length(latent_class_labels)
     # mat_test: cols = test samples, rows = MCMC samples (if n_test = 5 and n_iter = 100, there will be 5 columns and 100 rows)
     mat_test <- eta_samples[, test_data_indices, drop = FALSE]
-    write_log(paste0("generate_pred_scores input dimensions: ", nrow(mat_test), " rows and ", ncol(mat_test), " columns"), log_file = log_file)
     
     #matrix: columns = latent classes, rows = test samples
     pred_scores <- matrix(
@@ -138,7 +128,6 @@ generate_pred_scores_raw <- function(input_data, eta_samples, config, log_file =
             )
     )
     
-    write_log(paste0("Initializing pred_scores matrix with ", length(test_data_indices), " rows and ", n_classes, " columns"), log_file = log_file)
     for (i in 1:n_classes) {
         v <- apply(mat_test, MARGIN = 2, function(v) mean(v == i))
         pred_scores[, i] <- v
@@ -152,10 +141,9 @@ generate_pred_scores_raw <- function(input_data, eta_samples, config, log_file =
 }
 
 #placeholder for future code
-generate_pred_scores <- function(input_data, pred_scores, features, test_data_indices, config, log_file = NULL, results_dir = NULL) {
-    write_log("writing pred_scores (with some additional info)", log_file = log_file)
-    grouped_column_headers <- group_by_column_headers(column_names = colnames(pred_scores), groups = config$ANALYSIS$groups, log_file = log_file)
-    isolate_source <- generate_isolate_source(input_data, test_data_indices, config, log_file = log_file)
+generate_pred_scores <- function(input_data, pred_scores, features, test_data_indices, config, results_dir = NULL) {
+    grouped_column_headers <- group_by_column_headers(column_names = colnames(pred_scores), groups = config$ANALYSIS$groups)
+    isolate_source <- generate_isolate_source(input_data, test_data_indices, config)
 
     #include if seperation needed
     #write.csv(pred_scores[, grouped_column_headers$meat, drop = FALSE], file = file.path(results_dir, "meat.csv"))
@@ -170,17 +158,18 @@ generate_pred_scores <- function(input_data, pred_scores, features, test_data_in
         Indeterminate   = ifelse(rowSums(pred_scores[, grouped_column_headers$human, drop = FALSE]) < 0.8 & rowSums(pred_scores[, grouped_column_headers$meat, drop = FALSE]) < 0.8, 1, 0),
         Meat_class      = ifelse(rowSums(pred_scores[, grouped_column_headers$meat, drop = FALSE]) >= 0.8, 1, 0),
         other_pred      = rowSums(pred_scores[, !(colnames(pred_scores) %in% c(grouped_column_headers$meat, grouped_column_headers$human)), drop = FALSE]),
-        features[test_data_indices,]
+        features[test_data_indices, , drop = FALSE]
     )
-    write.csv(pred_scores_summary, file = file.path(results_dir, "pred_scores.csv"))
+    if (!is.null(results_dir)) {
+        write.csv(pred_scores_summary, file = file.path(results_dir, "pred_scores_summary.csv"))
+    }
     return(pred_scores_summary)
 }
 
 # credible intervals for FZEC summary - Dans code mostly. Jon takes minimal responsibilities.
-generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_data_indices, jags_parameters, model_results, config, log_file = NULL, results_dir = NULL) {
+generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_data_indices, jags_parameters, model_results, config, results_dir = NULL) {
     #this function is mostly Dan implementations
     # Jon takes minimal resposibilities.
-    write_log("generating FZEC summary... as per Dan implementation", log_file = log_file)
 
     
     # Class membership probabilities for each test isolate at each draw
@@ -188,11 +177,8 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
     # Summing within host and taking quantiles across draws generates credible intervals
     
     species_list <- map_host_to_col_indices(input_data = input_data, config = config)
-    write_log(paste0("species names: ", paste(names(species_list), collapse = ", ")), log_file = log_file)
     human_classes <- unlist(species_list[config$ANALYSIS$groups$human])
     animal_classes <- unlist(species_list[config$ANALYSIS$groups$meat])
-    write_log(paste0("human class col indices: ", paste(human_classes, collapse = ", ")), log_file = log_file)
-    write_log(paste0("animal class col indices: ", paste(animal_classes, collapse = ", ")), log_file = log_file)
 
     Y_test <- jags_parameters$Y[test_data_indices, , drop = FALSE]
     obs    <- !is.na(Y_test)
@@ -205,6 +191,7 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
     n_test <- length(test_data_indices)
     n_species <- length(species_list)
     species_prob_mcmc <- array(NA_real_, dim = c(n_iter, n_test, n_species), dimnames = list(NULL, NULL, names(species_list)))
+    human_prob_mcmc   <- matrix(NA_real_, nrow = n_iter, ncol = n_test)
     animal_prob_mcmc  <- matrix(NA_real_, nrow = n_iter, ncol = n_test)
 
     #ci intervals..
@@ -221,13 +208,14 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
         for (sp in names(species_list)) {
             species_prob_mcmc[m, , sp] <- rowSums(pr[, species_list[[sp]], drop = FALSE])
         }
+        human_prob_mcmc[m, ] <- rowSums(pr[, human_classes, drop = FALSE])
         animal_prob_mcmc[m, ] <- rowSums(pr[, animal_classes, drop = FALSE])
     }
 
     animal_total <- colMeans(animal_prob_mcmc)
-    human_total <- colMeans(species_prob_mcmc[, , config$ANALYSIS$groups$human])
+    human_total <- colMeans(human_prob_mcmc)
     isolate_source <- pred_scores_summary$isolate_source
-    test_is_human <- isolate_source == config$ANALYSIS$groups$human
+    test_is_human <- isolate_source %in% config$ANALYSIS$groups$human
 
     # Define FZEC using the posterior
     fzec_status <- ifelse(
@@ -251,7 +239,7 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
 
     # add per species summaries
     for (sp in names(species_list)) {
-        mcmc_sp <- species_prob_mcmc[, , sp]
+        mcmc_sp <- matrix(species_prob_mcmc[, , sp, drop = FALSE], nrow = n_iter, ncol = n_test)
         ci_fzec_results[[paste0(sp, "_posterior_mean")]] <- colMeans(mcmc_sp)
         ci_fzec_results[[paste0(sp, "_posterior_ci_2.5")]] <- apply(mcmc_sp, 2, quantile, probs = 0.025)
         ci_fzec_results[[paste0(sp, "_posterior_ci_97.5")]] <- apply(mcmc_sp, 2, quantile, probs = 0.975)
@@ -269,7 +257,7 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
 }
 
 # summary - Dans code mostly again
-generate_zoonotic_frac_summary <- function(ci_fzec_results, animal_prob_mcmc, log_file = NULL, results_dir = NULL) {
+generate_zoonotic_frac_summary <- function(ci_fzec_results, animal_prob_mcmc, results_dir = NULL) {
     # once again a Dan implementation
 
     # Calculate proportion (ignoring the NAs from animal samples)
@@ -278,7 +266,7 @@ generate_zoonotic_frac_summary <- function(ci_fzec_results, animal_prob_mcmc, lo
     #if no human test isolates, set zoonotic fraction to NA
     human_test_indices <- which(ci_fzec_results$is_human_test)
     if (length(human_test_indices) == 0) {
-        write_log("No human test isolates; zoonotic fraction set to NA", level = "WARNING", log_file = log_file)
+        print("No human test isolates; zoonotic fraction set to NA.")
         zoonotic_frac_mcmc <- rep(NA_real_, nrow(animal_prob_mcmc))
     } else {
         zoonotic_frac_mcmc <- rowMeans(animal_prob_mcmc[, human_test_indices, drop = FALSE])
@@ -295,11 +283,6 @@ generate_zoonotic_frac_summary <- function(ci_fzec_results, animal_prob_mcmc, lo
         zoonotic_frac_ci_2.5 = quantile(zoonotic_frac_mcmc, probs = 0.025, na.rm = TRUE),
         zoonotic_frac_ci_97.5 = quantile(zoonotic_frac_mcmc, probs = 0.975, na.rm = TRUE)
     )
-    write_log(paste0("n_human_test: ", zoonotic_frac_summary$n_human_test), log_file = log_file)
-    write_log(paste0("fzec_prop_cut_above_0800: ", zoonotic_frac_summary$fzec_prop_cut0.80), log_file = log_file)
-    write_log(paste0("zoonotic_frac_mean: ", zoonotic_frac_summary$zoonotic_frac_mean), log_file = log_file)
-    write_log(paste0("zoonotic_ci_0025_lower: ", zoonotic_frac_summary$zoonotic_frac_ci_2.5), log_file = log_file)
-    write_log(paste0("zoonotic_ci_0975_upper: ", zoonotic_frac_summary$zoonotic_frac_ci_97.5), log_file = log_file)
 
     if (!is.null(results_dir)) {
         write.csv(zoonotic_frac_summary, file = file.path(results_dir, "zoonotic_frac_summary.csv"), row.names = FALSE)
@@ -307,9 +290,9 @@ generate_zoonotic_frac_summary <- function(ci_fzec_results, animal_prob_mcmc, lo
     return(zoonotic_frac_summary)
 }
 
-write_csv_infos <- function(input_data = NULL, config = NULL, temp_dir = NULL, log_file = NULL) {
-    group_by_column_headers(colnames(input_data), config$ANALYSIS$groups, temp_dir = temp_dir, log_file = log_file)
-    map_host_to_col_indices(input_data = input_data, config = config, temp_dir = temp_dir, log_file = log_file)
+write_csv_infos <- function(input_data = NULL, config = NULL, temp_dir = NULL) {
+    group_by_column_headers(colnames(input_data), config$ANALYSIS$groups, temp_dir = temp_dir)
+    map_host_to_col_indices(input_data = input_data, config = config, temp_dir = temp_dir)
 } 
 
 

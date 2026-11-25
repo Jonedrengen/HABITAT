@@ -42,9 +42,8 @@ knitr::kable(kable_data,
              )
 ```
 
-
 ```{r predscores_overview}
-scores <- read.csv(file.path(results_dir, "pred_scores.csv"))
+scores <- read.csv(file.path(results_dir, "pred_scores_summary.csv"))
 if (nrow(scores) > 0) {
   counts <- data.frame(table(scores$isolate_source))
   colnames(counts) <- c("host", "count")
@@ -52,6 +51,15 @@ if (nrow(scores) > 0) {
   knitr::kable(predictions_overview, caption = "`host counts in test set`")
 } else {
   warning("pred scores has no rows")
+}
+```
+
+```{r feature_counts}
+fc <- read_csv_return_df(file.path(temp_dir, "feature_counts.csv"))
+if (nrow(fc) > 0) {
+  knitr::kable(fc, caption = "`features in test samples`")
+} else {
+  warning("feature counts missing.")
 }
 ```
 
@@ -103,15 +111,6 @@ knitr::kable(jags_parameters, caption = "`Jags parameters`")
 ```{r r_hat}
 rhat_summary <- read_csv_return_df(file.path(temp_dir, "rhat_summary.csv"))
 knitr::kable(rhat_summary, caption = "`R-hat summary - should be < 1.1`")
-```
-
-```{r feature_counts}
-fc <- read_csv_return_df(file.path(temp_dir, "feature_counts.csv"))
-if (nrow(fc) > 0) {
-  knitr::kable(fc, caption = "`features in test samples`")
-} else {
-  warning("feature counts missing.")
-}
 ```
 ## credits and acknowledgements
 

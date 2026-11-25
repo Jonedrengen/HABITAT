@@ -22,7 +22,7 @@ default_meat_hist_config <- list(
 )
 
 
-generate_hist <- function(Meat_pred_vector, hist_config = default_meat_hist_config, plots_dir = NULL, log_file = NULL) {
+generate_hist <- function(Meat_pred_vector, hist_config = default_meat_hist_config, plots_dir = NULL) {
     #--------docstring----------
   # Creates a histogram of predicted food-animal origin. Isolates are grouped
   # as Human (Meat_pred <= 0.2), Indeterminate (> 0.2 and < 0.8), or
@@ -31,7 +31,6 @@ generate_hist <- function(Meat_pred_vector, hist_config = default_meat_hist_conf
   # Args:
   #   Meat_pred_vector: Numeric vector of predicted food-animal origin probabilities.
   #   hist_config: List containing histogram configuration (bin_width, x_label, y_label, title).
-  #   log_file: Optional path to a log file.
   #
   # Returns:
   #   A ggplot2 object representing the histogram.
@@ -39,7 +38,6 @@ generate_hist <- function(Meat_pred_vector, hist_config = default_meat_hist_conf
     
     # this is a nested ifelse to categorize each prediction into Human, Indeterminate, or Animal based on thresholds
     # sorry...
-    write_log("generating hist plot...", log_file = log_file)
     group <- ifelse(Meat_pred_vector <= hist_config$human_threshold, hist_config$groups[1], 
              ifelse(Meat_pred_vector >= hist_config$food_animal_threshold, hist_config$groups[3], hist_config$groups[2]))
     
@@ -49,11 +47,6 @@ generate_hist <- function(Meat_pred_vector, hist_config = default_meat_hist_conf
     denominator         = sum(group_counts)
     percentages         = if (denominator) round(100 * group_counts / denominator, 1) else rep(0, length(group_counts))
     labels              = paste0(hist_config$groups, "\nn=", group_counts, " (", percentages, "%)")
-
-    calc_log_mes <- c(paste0("Group counts: ", paste(group_counts, collapse = ", ")),
-                      paste0("Percentages: ", paste(percentages, collapse = ", ")),
-                      paste0("Labels: ", paste(labels, collapse = ", ")))
-    write_log(calc_log_mes, log_file = log_file)
 
     plot_data <- data.frame(
         Meat_pred = Meat_pred_vector,
@@ -80,12 +73,12 @@ generate_hist <- function(Meat_pred_vector, hist_config = default_meat_hist_conf
     #return(histogram_plot)
 }
 
-generate_hist_by_species <- function(pred_scores_summary, hist_config = default_meat_hist_config, plots_dir = NULL, log_file = NULL) {
+generate_hist_by_species <- function(pred_scores_summary, hist_config = default_meat_hist_config, plots_dir = NULL) {
     sources <- unique(pred_scores_summary$isolate_source)
     
     #check for missing isolate_source values (should not be)
     if (any(is.na(pred_scores_summary$isolate_source))) {
-        write_log("Some entries have missing isolate_source.", level = "WARNING", log_file = log_file)
+        print("Some entries have missing isolate_source.")
     }
 
     for (source in sources) {
@@ -100,25 +93,19 @@ generate_hist_by_species <- function(pred_scores_summary, hist_config = default_
         source_subset <- pred_scores_summary$meat_pred[source_subset_indices]
         generate_hist(Meat_pred_vector = source_subset,
                     hist_config = hist_config_current,
-                    plots_dir = plots_dir,
-                    log_file = log_file)
-        write_log(sprintf("generated histogram for source: %s", source), log_file = log_file)
+                    plots_dir = plots_dir)
     }
 }
 
-generate_histograms <- function(pred_scores_summary, plots_dir = NULL, log_file = NULL) {
-    write_log("generating histograms for prediction scores summary...", log_file = log_file)
+generate_histograms <- function(pred_scores_summary, plots_dir = NULL) {
     all_hist_config <- default_meat_hist_config
     all_hist_config$file_save_name <- paste0("all_", all_hist_config$file_save_name)
     all_hist_config$x_label <- paste0(all_hist_config$x_label, " (all)")
     generate_hist(Meat_pred_vector = pred_scores_summary$meat_pred,
                   hist_config = all_hist_config,
-                  plots_dir = plots_dir,
-                  log_file = log_file)
+                  plots_dir = plots_dir)
 
-    write_log("generating histograms by group...", log_file = log_file)
     generate_hist_by_species(pred_scores_summary = pred_scores_summary,
                            hist_config = default_meat_hist_config,
-                           plots_dir = plots_dir,
-                           log_file = log_file)
+                           plots_dir = plots_dir)
 }

@@ -1,0 +1,26 @@
+default:
+  JAGS_DATA:
+    seed: NULL #set NULL for random seed (testing is 69)
+    chains: 3
+    iterations: 1000
+    burn_in: 500
+    thin: 1
+    save_parameters:
+      - "pi"
+      - "p"
+      - "eta"
+  DATA_META:
+    id_column_name: "Sample_Name"
+    training_column_name: "training"
+    class_column_prefix: "CL_"
+    feature_column_prefix: "FE_"
+  ANALYSIS:
+    groups: 
+      human: #add or remove as needed 
+        - "human"
+      meat: #add or remove as needed
+        - "chicken"
+        - "pork"
+  OPTIONS:
+    delete_temp_files: FALSE
+    advanced_analysis: TRUE

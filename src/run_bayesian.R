@@ -20,7 +20,6 @@ get_root <- function(argv) {
 argv <- commandArgs(trailingOnly = FALSE)
 root <- get_root(argv)
 #sourcing functionality
-source(file.path(root, "utils", "logging.R"))
 source(file.path(root, "utils", "config_utils.R"))
 source(file.path(root, "utils", "write_output_dirs.R"))
 source(file.path(root, "blcm", "data_reader.R"))
@@ -47,15 +46,23 @@ config_file <- args$config
 
 
 #create output structure
-output_dirs <- write_output_structure(args$output)
-log_file <- file.path(output_dirs$logs, "blcm.log")
+output_dirs <- tryCatch({
+                print("Creating output structure...")
+                write_output_structure(args$output)
+}, error = function(e) {
+    stop("Error creating output structure: ", conditionMessage(e))
+})
 model_file <- file.path(root, "model", "model.bug")
 #read config and save a copy in output
-config <- read_config(config_file)
+config <- tryCatch({
+    print("Reading config...")
+    read_config(config_file)
+}, error = function(e) {
+    stop("Error reading config: ", conditionMessage(e))
+})
 file.copy(config_file, file.path(output_dirs$temp, paste0(Sys.Date(), "_config.yml")))
 
-
-log_step(sprintf("Starting Bayesian analysis at %s", start_time), log_file = log_file)
+print(sprintf("Starting Bayesian analysis at %s", start_time))
 ##########################################
 ######## Start Bayesian analysis #########
 ##########################################
@@ -65,92 +72,118 @@ if (!is.null(config$JAGS_DATA$seed)) {
   set.seed(config$JAGS_DATA$seed)
 }
 
-#read, validate and log input data
+#read and validate input data
+print("Reading and validating input data...")
 raw_input_data <- read_data(input_file)
-input_data <- validate_data(raw_input_data, config, log_file = log_file)
+input_data <- validate_data(raw_input_data, config)
 training_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 1)
 test_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 0)
 
-#write analysis data, so validation and reproducibility are possible
+#write input data, so validation and reproducibility is easier
 write.csv(input_data, file = file.path(output_dirs$temp, "input_data.csv"), row.names = FALSE)
 write.csv(input_data[training_data_indices, ], file = file.path(output_dirs$temp, "training_data.csv"), row.names = FALSE)
 write.csv(input_data[test_data_indices, ], file = file.path(output_dirs$temp, "test_data.csv"), row.names = FALSE)
-
-write_log(sprintf("Input data dimensions: %s", paste(dim(raw_input_data), collapse = " x ")), log_file = log_file)
-write_log(sprintf("Number of test samples: %s", length(test_data_indices)), log_file = log_file)
+print(sprintf("Input data dimensions: %s", paste(dim(raw_input_data), collapse = " x ")))
+print(sprintf("Training samples: %d; test samples: %d", length(training_data_indices), length(test_data_indices)))
 
 #handle JAGS data assembly
-log_step("Starting JAGS data assembly...", log_file = log_file)
-jags_parameters <- assemble_jags_data(input_data,
-                                      id_column_name = config$DATA_META$id_column_name,
-                                      training_column_name = config$DATA_META$training_column_name,
-                                      class_column_prefix = config$DATA_META$class_column_prefix,
-                                      feature_column_prefix = config$DATA_META$feature_column_prefix,
-                                      temp_dir = output_dirs$temp,
-                                      log_file = log_file)
+jags_parameters <- tryCatch({
+    print("Assembling JAGS data...")
+    assemble_jags_data(input_data,
+                        id_column_name = config$DATA_META$id_column_name,
+                        training_column_name = config$DATA_META$training_column_name,
+                        class_column_prefix = config$DATA_META$class_column_prefix,
+                        feature_column_prefix = config$DATA_META$feature_column_prefix,
+                        temp_dir = output_dirs$temp)
+}, error = function(e) {
+  stop("Error assembling JAGS data: ", conditionMessage(e))
+})
 
 #count features per column for test data
-feature_counts <- count_feature_proportions(test_feature_matrix = jags_parameters$Y[test_data_indices,], temp_dir = output_dirs$temp)
-
-log_step("Running JAGS model...", log_file = log_file)
-model_output <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, temp_dir = output_dirs$temp, log_file = log_file)
-
-
-
-log_step("Summarizing model output...", log_file = log_file)
-#summaries 
-rhat_symmary <- summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, temp_dir = output_dirs$temp, log_file = log_file)
-
-log_step("Generating prediction scores raw...", log_file = log_file)
-#generate prediction scores for test samples and save the results
-pred_scores <- generate_pred_scores_raw(input_data = input_data,
-                                        eta_samples = model_output$eta_samples,
-                                        config = config,
-                                        log_file = log_file,
-                                        results_dir = output_dirs$results)
+feature_counts <- tryCatch({
+    print("Counting features...")
+    count_feature_proportions(feature_matrix = jags_parameters$Y[test_data_indices, , drop = FALSE], temp_dir = output_dirs$temp)
+}, error = function(e) {
+  stop("Error counting features: ", conditionMessage(e))
+})
 
 
-log_step("Generating prediction scores...", log_file = log_file)
+model_output <- tryCatch({
+    print("Running JAGS model...")
+    run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, temp_dir = output_dirs$temp)
+}, error = function(e) {
+  stop("Error running model: ", conditionMessage(e))
+})
 
 
-pred_scores_summary <- generate_pred_scores(input_data = input_data,
-                                                features = jags_parameters$Y,
-                                                pred_scores = pred_scores,
-                                                test_data_indices = test_data_indices,
-                                                config = config,
-                                                results_dir = output_dirs$results,
-                                                log_file = log_file)
 
-log_step("Generating FZEC summary...", log_file = log_file)
+
+rhat_summary <- tryCatch({
+    print("Summarizing Rhat for pi and p (target < 1.1)...")
+    summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, temp_dir = output_dirs$temp)
+}, error = function(e) {
+    stop("Error summarizing Rhat: ", conditionMessage(e))
+})
+print(rhat_summary)
+
+pred_scores <- tryCatch({
+    print("Generating raw prediction scores...")
+    generate_pred_scores_raw(input_data = input_data,
+                             eta_samples = model_output$eta_samples,
+                             config = config,
+                             results_dir = output_dirs$results)
+}, error = function(e) {
+    stop("Error generating raw prediction scores: ", conditionMessage(e))
+})
+
+pred_scores_summary <- tryCatch({
+    print("Summarizing prediction scores...")
+    generate_pred_scores(input_data = input_data,
+                         features = jags_parameters$Y,
+                         pred_scores = pred_scores,
+                         test_data_indices = test_data_indices,
+                         config = config,
+                         results_dir = output_dirs$results)
+}, error = function(e) {
+    stop("Error summarizing prediction scores: ", conditionMessage(e))
+})
+
 #FZEC summary as per Dan's implementation
-ci_fzec_return_list <- generate_CIs_FZEC_pred_scores(input_data = input_data,
-                                                    pred_scores_summary = pred_scores_summary,
-                                                    test_data_indices = test_data_indices,
-                                                    jags_parameters = jags_parameters,
-                                                    model_results = model_output,
-                                                    config = config,
-                                                    results_dir = output_dirs$more_results,
-                                                    log_file = log_file)
+ci_fzec_return_list <- tryCatch({
+    print("Generating FZEC summary...")
+    generate_CIs_FZEC_pred_scores(input_data = input_data,
+                                 pred_scores_summary = pred_scores_summary,
+                                 test_data_indices = test_data_indices,
+                                 jags_parameters = jags_parameters,
+                                 model_results = model_output,
+                                 config = config,
+                                 results_dir = output_dirs$more_results)
+}, error = function(e) {
+    stop("Error generating FZEC summary: ", conditionMessage(e))
+})
 
-log_step("Generating zoonotic fraction summary...", log_file = log_file)
-zoonotic_frac_summary <- generate_zoonotic_frac_summary(ci_fzec_results = ci_fzec_return_list$ci_fzec_results, 
-                                                        animal_prob_mcmc = ci_fzec_return_list$animal_prob_mcmc,
-                                                        log_file = log_file,
-                                                        results_dir = output_dirs$more_results)
+zoonotic_frac_summary <- tryCatch({
+    print("Generating zoonotic fraction summary...")
+    generate_zoonotic_frac_summary(ci_fzec_results = ci_fzec_return_list$ci_fzec_results,
+                                   animal_prob_mcmc = ci_fzec_return_list$animal_prob_mcmc,
+                                   results_dir = output_dirs$more_results)
+}, error = function(e) {
+    stop("Error generating zoonotic fraction summary: ", conditionMessage(e))
+})
 
 #write csv infos
-write_csv_infos(input_data = input_data, config = config, temp_dir = output_dirs$temp, log_file = log_file)
+write_csv_infos(input_data = input_data, config = config, temp_dir = output_dirs$temp)
 
-log_step("Generating histograms for prediction scores summary...", log_file = log_file)
+print("Generating prediction score histograms...")
 #generate histograms for the prediction scores summary
 generate_histograms(pred_scores_summary = pred_scores_summary, plots_dir = output_dirs$plots)
 
-log_step("Run complete... Now to render report", log_file = log_file)
-write_log(sprintf("Outputs: %s", output_dirs$root), log_file = log_file)
+print("Analysis complete. Rendering report...")
+print(sprintf("Outputs: %s", output_dirs$root))
 end_time <- Sys.time()
 time_passed <- difftime(end_time, start_time, units = "mins")
 time_message <- sprintf("Runtime: %.2f min", time_passed)
-write_log(time_message, log_file = log_file)
+print(time_message)
 
 tryCatch(
     {
@@ -160,12 +193,10 @@ tryCatch(
             output_dir = output_dirs$root,
             params = list(output_dir = normalizePath(output_dirs$root))
         )
-        print("Report done")
-        write_log("Report rendered", log_file = log_file)
+        print("Report rendered.")
     },
     error = function(error) {
-        write_log(paste("Report not rendered:", conditionMessage(error)), log_file = log_file)
-        warning(error)
+        warning("Report not rendered: ", conditionMessage(error))
     }
 )
 
