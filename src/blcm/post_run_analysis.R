@@ -1,5 +1,5 @@
 
-summarize_rhat <- function(bugs_summary_table, temp_dir = NULL) {
+summarize_rhat <- function(bugs_summary_table) {
     # summarize Rhat for pi and p rows
     # input: 
     pi_and_p_rows <- bugs_summary_table[grep("^(pi|p)\\[", rownames(bugs_summary_table)), "Rhat"]
@@ -12,13 +12,10 @@ summarize_rhat <- function(bugs_summary_table, temp_dir = NULL) {
                                thirdQ = round(rhat_summary_table[["3rd Qu."]], 5),
                                max = round(rhat_summary_table[["Max."]], 5))
     
-    if (!is.null(temp_dir)) {
-        write.csv(rhat_summary, file.path(temp_dir, "rhat_summary.csv"), row.names = FALSE)
-    }
     return(rhat_summary)
 }
 
-group_by_column_headers <- function(column_names, groups, temp_dir = NULL) {
+group_column_names_by_host_group <- function(column_names, groups) {
     # group column headers by host type
     # input:  column_names = c("Cl_human_CL1", "Cl_human_CL2", "Cl_chicken_CL1", "Cl_chicken_CL2", "Cl_pork_CL1")
     #         groups = list(human = "human", meat = c("chicken", "pork"))
@@ -40,16 +37,12 @@ group_by_column_headers <- function(column_names, groups, temp_dir = NULL) {
         }
     }
 
-    if (!is.null(temp_dir)) {
-        group_write_obj <- unlist(grouped_column_headers)
-        write.csv(group_write_obj, file = file.path(temp_dir, "grouped_columns.csv"))
-    }
-    # Returns a named list (like a dict): each group name maps to its matching column names.
+    # Returns a named list (like a dict): each group name (human, meat) maps to its matching column names (like Cl_human_CL1).
     return(grouped_column_headers)
 }
 
 
-map_host_to_col_indices <- function(input_data, config, temp_dir = NULL) {
+map_hosts_to_class_column_indices <- function(input_data, config) {
     # might look like (should probably be more robust or readable):
     # input:    cols[Cl_human_CL1, Cl_human_CL2, Cl_chicken_CL1,CL_chicken_CL2, Cl_pork_CL1]
     # output:   list(human = c(1,2), chicken = c(3,4), pork = c(5))
@@ -66,17 +59,6 @@ map_host_to_col_indices <- function(input_data, config, temp_dir = NULL) {
     #name the list elements with the host names
     names(host_to_col_indices) <- hosts
 
-    #this will find the column names for the indices
-    if (!is.null(temp_dir)) {
-        host_column <- data.frame(host = character(), col = character())
-        for (i in seq_along(host_to_col_indices)) {
-            for (j in seq_along(host_to_col_indices[[i]])) {
-                index <- host_to_col_indices[[i]][j]
-                host_column <- rbind(host_column, data.frame(host = hosts[i], col = class_column_names[index]))
-            }
-        }
-        write.csv(host_column, file.path(temp_dir, "host_to_col_names.csv"), row.names = FALSE) 
-    }
     return(host_to_col_indices)
 }
 
@@ -87,12 +69,12 @@ generate_isolate_source <- function(input_data, test_data_indices, config) {
 
     #if row value == 1 and column header matches a host, assign that host to the isolate_source
     class_column_names <- names(input_data)[startsWith(names(input_data), config$DATA_META$class_column_prefix)]
-    class_columns <- input_data[test_data_indices, class_column_names, drop = FALSE]
+    test_class_columns <- input_data[test_data_indices, class_column_names, drop = FALSE]
 
     # Iterate over each test data isolate and assign the host based on class columns
     for (i in seq_along(test_data_indices)) {
         for (col in class_column_names) {
-            if (class_columns[i, col] == 1) {
+            if (test_class_columns[i, col] == 1) {
                 isolate_source[i] <- col
                 break
             }
@@ -110,10 +92,10 @@ generate_isolate_source <- function(input_data, test_data_indices, config) {
     return(isolate_source)
 }
 
-generate_pred_scores_raw <- function(input_data, eta_samples, config, results_dir = NULL) {
+generate_pred_scores_raw <- function(input_data, eta_samples, config) {
     test_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 0)
-    latent_class_labels <- names(input_data)[startsWith(names(input_data), config$DATA_META$class_column_prefix)]
-    n_classes <- length(latent_class_labels)
+    class_column_names <- names(input_data)[startsWith(names(input_data), config$DATA_META$class_column_prefix)]
+    n_classes <- length(class_column_names)
     # mat_test: cols = test samples, rows = MCMC samples (if n_test = 5 and n_iter = 100, there will be 5 columns and 100 rows)
     mat_test <- eta_samples[, test_data_indices, drop = FALSE]
     
@@ -124,7 +106,7 @@ generate_pred_scores_raw <- function(input_data, eta_samples, config, results_di
         ncol = n_classes,
         dimnames = list(
             input_data[[config$DATA_META$id_column_name]][test_data_indices],
-            latent_class_labels
+            class_column_names
             )
     )
     
@@ -132,22 +114,13 @@ generate_pred_scores_raw <- function(input_data, eta_samples, config, results_di
         v <- apply(mat_test, MARGIN = 2, function(v) mean(v == i))
         pred_scores[, i] <- v
     }
-    if (!is.null(results_dir)) {
-        write.csv(pred_scores,
-              file = file.path(results_dir, "pred_scores_raw.csv"),
-              row.names = TRUE)
-    }
     return(pred_scores)
 }
 
 #placeholder for future code
-generate_pred_scores <- function(input_data, pred_scores, features, test_data_indices, config, results_dir = NULL) {
-    grouped_column_headers <- group_by_column_headers(column_names = colnames(pred_scores), groups = config$ANALYSIS$groups)
+generate_pred_scores <- function(input_data, pred_scores, features, test_data_indices, config) {
+    grouped_column_headers <- group_column_names_by_host_group(column_names = colnames(pred_scores), groups = config$ANALYSIS$groups)
     isolate_source <- generate_isolate_source(input_data, test_data_indices, config)
-
-    #include if seperation needed
-    #write.csv(pred_scores[, grouped_column_headers$meat, drop = FALSE], file = file.path(results_dir, "meat.csv"))
-    #write.csv(pred_scores[, grouped_column_headers$human, drop = FALSE], file = file.path(results_dir, "human.csv"))
 
     pred_scores_summary <- data.frame(
         pred_scores,
@@ -160,14 +133,11 @@ generate_pred_scores <- function(input_data, pred_scores, features, test_data_in
         other_pred      = rowSums(pred_scores[, !(colnames(pred_scores) %in% c(grouped_column_headers$meat, grouped_column_headers$human)), drop = FALSE]),
         features[test_data_indices, , drop = FALSE]
     )
-    if (!is.null(results_dir)) {
-        write.csv(pred_scores_summary, file = file.path(results_dir, "pred_scores_summary.csv"))
-    }
     return(pred_scores_summary)
 }
 
 # credible intervals for FZEC summary - Dans code mostly. Jon takes minimal responsibilities.
-generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_data_indices, jags_parameters, model_results, config, results_dir = NULL) {
+generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_data_indices, jags_parameters, model_results, config) {
     #this function is mostly Dan implementations
     # Jon takes minimal resposibilities.
 
@@ -176,7 +146,7 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
     # P(class j | MGE profile, p, pi) at iteration m. 
     # Summing within host and taking quantiles across draws generates credible intervals
     
-    species_list <- map_host_to_col_indices(input_data = input_data, config = config)
+    species_list <- map_hosts_to_class_column_indices(input_data = input_data, config = config)
     human_classes <- unlist(species_list[config$ANALYSIS$groups$human])
     animal_classes <- unlist(species_list[config$ANALYSIS$groups$meat])
 
@@ -245,10 +215,6 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
         ci_fzec_results[[paste0(sp, "_posterior_ci_97.5")]] <- apply(mcmc_sp, 2, quantile, probs = 0.975)
     }
 
-    if (!is.null(results_dir)) {
-        write.csv(ci_fzec_results, file = file.path(results_dir, "pred_scores_CIs_FZEC.csv"), row.names = FALSE)
-    }
-    
     return_list <- list(
         ci_fzec_results = ci_fzec_results,
         animal_prob_mcmc = animal_prob_mcmc
@@ -257,7 +223,7 @@ generate_CIs_FZEC_pred_scores <- function(input_data, pred_scores_summary, test_
 }
 
 # summary - Dans code mostly again
-generate_zoonotic_frac_summary <- function(ci_fzec_results, animal_prob_mcmc, results_dir = NULL) {
+generate_zoonotic_frac_summary <- function(ci_fzec_results, animal_prob_mcmc) {
     # once again a Dan implementation
 
     # Calculate proportion (ignoring the NAs from animal samples)
@@ -284,16 +250,29 @@ generate_zoonotic_frac_summary <- function(ci_fzec_results, animal_prob_mcmc, re
         zoonotic_frac_ci_97.5 = quantile(zoonotic_frac_mcmc, probs = 0.975, na.rm = TRUE)
     )
 
-    if (!is.null(results_dir)) {
-        write.csv(zoonotic_frac_summary, file = file.path(results_dir, "zoonotic_frac_summary.csv"), row.names = FALSE)
-    }
     return(zoonotic_frac_summary)
 }
 
-write_csv_infos <- function(input_data = NULL, config = NULL, temp_dir = NULL) {
-    group_by_column_headers(colnames(input_data), config$ANALYSIS$groups, temp_dir = temp_dir)
-    map_host_to_col_indices(input_data = input_data, config = config, temp_dir = temp_dir)
-} 
+write_host_mappings <- function(input_data = NULL, config = NULL, temp_dir = NULL) {
+    grouped_columns <- group_column_names_by_host_group(colnames(input_data), config$ANALYSIS$groups)
+    host_indices <- map_hosts_to_class_column_indices(input_data = input_data, config = config)
+    
+    if (!is.null(temp_dir)) {
+        write.csv(unlist(grouped_columns), file = file.path(temp_dir, "grouped_columns.csv"))
+        
+        class_column_names <- names(input_data)[startsWith(names(input_data), config$DATA_META$class_column_prefix)]
+        hosts <- c(config$ANALYSIS$groups$human, config$ANALYSIS$groups$meat)
+        host_column <- data.frame(host = character(), col = character())
+        for (i in seq_along(host_indices)) {
+            for (index in host_indices[[i]]) {
+                message(sprintf("mapping col: %s", class_column_names[index]), " to host: ", hosts[i])
+                host_column <- rbind(host_column, data.frame(host = hosts[i], col = class_column_names[index]))
+            }
+        }
+        write.csv(host_column, file.path(temp_dir, "host_to_col_names.csv"), row.names = FALSE)
+    }
+    invisible(host_indices)
+}
 
 
 entropy <- function(p) -sum(p * log(p + 1e-12))

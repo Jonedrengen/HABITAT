@@ -1,6 +1,8 @@
 #generates a histogram of predicted food-animal origin for isolates
 #dependencies: ggplot2, dplyr
 
+#TODO: write this way better
+
 default_meat_hist_config <- list(
     bin_width           = 0.02,
     boundary            = 0,

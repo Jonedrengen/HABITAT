@@ -22,7 +22,25 @@ read_csv_return_df <- function(file_path) {
 }
 ```
 
-## model inputs
+## Run overview
+_________
+### Run details
+
+```{r model_run}
+model_run_name <- basename(params$output_dir)
+model_run_date <- Sys.Date()
+model_size <- read_csv_return_df(file.path(temp_dir, "model_size.csv"))
+model_runtime <- read_csv_return_df(file.path(temp_dir, "runtime.csv"))
+model_run_info <- data.frame(run_name = model_run_name,
+                             date = model_run_date,
+                             model_size = model_size$size,
+                             runtime_minutes = model_runtime$time_passed)
+knitr::kable(model_run_info,
+             caption = "`model run info`"
+             )
+```
+
+### Input data
 
 ```{r inputs}
 training <- read_csv_return_df(file.path(temp_dir, "training_data.csv"))
@@ -37,10 +55,13 @@ kable_data <- data.frame(
   n_features = ncol(features)
   )
 
-knitr::kable(kable_data, 
+knitr::kable(kable_data,
+             col.names = c("Training isolates", "Test isolates", "Latent classes", "MGE features"),
              caption = "`model inputs`"
              )
 ```
+
+### sources of isolates
 
 ```{r predscores_overview}
 scores <- read.csv(file.path(results_dir, "pred_scores_summary.csv"))
@@ -48,11 +69,15 @@ if (nrow(scores) > 0) {
   counts <- data.frame(table(scores$isolate_source))
   colnames(counts) <- c("host", "count")
   predictions_overview <- data.frame(counts)
-  knitr::kable(predictions_overview, caption = "`host counts in test set`")
+  knitr::kable(predictions_overview,
+               col.names = c("Source", "Number of isolates"),
+               caption = "`host counts in test set`")
 } else {
   warning("pred scores has no rows")
 }
 ```
+
+### MGE features in test isolates
 
 ```{r feature_counts}
 fc <- read_csv_return_df(file.path(temp_dir, "feature_counts.csv"))
@@ -63,7 +88,9 @@ if (nrow(fc) > 0) {
 }
 ```
 
-## posterior distribution
+## Results
+_________
+### Predicted animal-origin probabilities
 
 ```{r predhist, out.width='90%', fig.align='center'}
 files <- list.files(file.path(results_dir, "plots"), pattern = "png", full.names = TRUE)
@@ -75,7 +102,7 @@ if (length(files) > 0) {
 }
 ```
 
-## zoonotic fraction
+### Summary for human-source isolates
 
 ```{r zoonotic}
 zoonotic_frac <- read_csv_return_df(file.path(results_dir, "more_results", "zoonotic_frac_summary.csv"))
@@ -85,17 +112,28 @@ if (nrow(zoonotic_frac) > 0) {
                         fzec_frac_mean = round(zoonotic_frac$zoonotic_frac_mean,3),
                         ci_low = round(zoonotic_frac$zoonotic_frac_ci_2.5,3),
                         ci_high = round(zoonotic_frac$zoonotic_frac_ci_97.5,3))
-  knitr::kable(summary, caption = "`zoonotic fraction`")
+  knitr::kable(summary,
+               col.names = c("Human-source test isolates",
+                             "Proportion above 80% animal probability",
+                             "Mean animal-origin probability",
+                             "95% credible interval: lower",
+                             "95% credible interval: upper"),
+               caption = "`zoonotic fraction`")
 } else {
   warning("zoonotic fraction has no rows")
 }
 ```
 
-## meta information
+## Model convergence
+
+```{r r_hat}
+rhat_summary <- read_csv_return_df(file.path(temp_dir, "rhat_summary.csv"))
+knitr::kable(rhat_summary, caption = "`R-hat summary - should be < 1.1`")
+```
+
+## Model settings
 
 ```{r jags_overview}
-
-
 jags_parameters <- data.frame(
   seed = if (is.null(config$JAGS_DATA$seed)) NA_integer_ else config$JAGS_DATA$seed,
   chains = config$JAGS_DATA$chains,
@@ -107,12 +145,7 @@ jags_parameters <- data.frame(
 knitr::kable(jags_parameters, caption = "`Jags parameters`")
 ```
 
-
-```{r r_hat}
-rhat_summary <- read_csv_return_df(file.path(temp_dir, "rhat_summary.csv"))
-knitr::kable(rhat_summary, caption = "`R-hat summary - should be < 1.1`")
-```
-## credits and acknowledgements
+## Credits and acknowledgements
 
 Thanks to all contributors.
 
@@ -124,3 +157,4 @@ Thanks to all contributors.
 - Jon Slotved
 - Yashan Wang
 - Kara Schmidlin
+- Eduardo Mancilla

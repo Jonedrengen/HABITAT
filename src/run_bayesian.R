@@ -89,12 +89,19 @@ print(sprintf("Training samples: %d; test samples: %d", length(training_data_ind
 #handle JAGS data assembly
 jags_parameters <- tryCatch({
     print("Assembling JAGS data...")
-    assemble_jags_data(input_data,
-                        id_column_name = config$DATA_META$id_column_name,
-                        training_column_name = config$DATA_META$training_column_name,
-                        class_column_prefix = config$DATA_META$class_column_prefix,
-                        feature_column_prefix = config$DATA_META$feature_column_prefix,
-                        temp_dir = output_dirs$temp)
+    parameters <- assemble_jags_data(input_data,
+                                     training_column_name = config$DATA_META$training_column_name,
+                                     class_column_prefix = config$DATA_META$class_column_prefix,
+                                     feature_column_prefix = config$DATA_META$feature_column_prefix)
+    eta_table <- data.frame(sample_id = input_data[[config$DATA_META$id_column_name]],
+                            training = input_data[[config$DATA_META$training_column_name]],
+                            eta = parameters$eta)
+    class_columns <- names(input_data)[startsWith(names(input_data), config$DATA_META$class_column_prefix)]
+    class_matrix <- as.matrix(input_data[, class_columns, drop = FALSE])
+    write.csv(eta_table, file.path(output_dirs$temp, "eta_vector.csv"), row.names = FALSE)
+    write.csv(class_matrix, file.path(output_dirs$temp, "class_matrix.csv"), row.names = FALSE)
+    write.csv(data.frame(parameters$Y), file.path(output_dirs$temp, "feature_matrix.csv"), row.names = FALSE)
+    parameters
 }, error = function(e) {
   stop("Error assembling JAGS data: ", conditionMessage(e))
 })
@@ -102,48 +109,54 @@ jags_parameters <- tryCatch({
 #count features per column for test data
 feature_counts <- tryCatch({
     print("Counting features...")
-    count_feature_proportions(feature_matrix = jags_parameters$Y[test_data_indices, , drop = FALSE], temp_dir = output_dirs$temp)
+    counts <- count_feature_proportions(feature_matrix = jags_parameters$Y[test_data_indices, , drop = FALSE])
+    write.csv(counts, file.path(output_dirs$temp, "feature_counts.csv"), row.names = FALSE)
+    counts
 }, error = function(e) {
   stop("Error counting features: ", conditionMessage(e))
 })
 
-
 model_output <- tryCatch({
     print("Running JAGS model...")
-    run_model(jags_parameters = jags_parameters, config = config, model_file = model_file, temp_dir = output_dirs$temp)
+    model_results <- run_model(jags_parameters = jags_parameters, config = config, model_file = model_file)
+    write.csv(model_results$bugs_summary_table, file.path(output_dirs$temp, "bugs_summary_table.csv"), row.names = TRUE)
+    write.csv(model_results$model_size, file.path(output_dirs$temp, "model_size.csv"), row.names = FALSE)
+    model_results
 }, error = function(e) {
   stop("Error running model: ", conditionMessage(e))
 })
 
-
-
-
 rhat_summary <- tryCatch({
     print("Summarizing Rhat for pi and p (target < 1.1)...")
-    summarize_rhat(bugs_summary_table = model_output$bugs_summary_table, temp_dir = output_dirs$temp)
+    rhat_summary <- summarize_rhat(bugs_summary_table = model_output$bugs_summary_table)
+    write.csv(rhat_summary, file.path(output_dirs$temp, "rhat_summary.csv"), row.names = FALSE)
+    print(rhat_summary)
+    rhat_summary
 }, error = function(e) {
     stop("Error summarizing Rhat: ", conditionMessage(e))
 })
-print(rhat_summary)
+
 
 pred_scores <- tryCatch({
     print("Generating raw prediction scores...")
-    generate_pred_scores_raw(input_data = input_data,
-                             eta_samples = model_output$eta_samples,
-                             config = config,
-                             results_dir = output_dirs$results)
+    scores <- generate_pred_scores_raw(input_data = input_data,
+                                       eta_samples = model_output$eta_samples,
+                                       config = config)
+    write.csv(scores, file.path(output_dirs$results, "pred_scores_raw.csv"), row.names = TRUE)
+    scores
 }, error = function(e) {
     stop("Error generating raw prediction scores: ", conditionMessage(e))
 })
 
 pred_scores_summary <- tryCatch({
     print("Summarizing prediction scores...")
-    generate_pred_scores(input_data = input_data,
-                         features = jags_parameters$Y,
-                         pred_scores = pred_scores,
-                         test_data_indices = test_data_indices,
-                         config = config,
-                         results_dir = output_dirs$results)
+    pred_score_summary <- generate_pred_scores(input_data = input_data,
+                                          features = jags_parameters$Y,
+                                          pred_scores = pred_scores,
+                                          test_data_indices = test_data_indices,
+                                          config = config)
+    write.csv(pred_score_summary, file.path(output_dirs$results, "pred_scores_summary.csv"))
+    pred_score_summary
 }, error = function(e) {
     stop("Error summarizing prediction scores: ", conditionMessage(e))
 })
@@ -151,39 +164,42 @@ pred_scores_summary <- tryCatch({
 #FZEC summary as per Dan's implementation
 ci_fzec_return_list <- tryCatch({
     print("Generating FZEC summary...")
-    generate_CIs_FZEC_pred_scores(input_data = input_data,
-                                 pred_scores_summary = pred_scores_summary,
-                                 test_data_indices = test_data_indices,
-                                 jags_parameters = jags_parameters,
-                                 model_results = model_output,
-                                 config = config,
-                                 results_dir = output_dirs$more_results)
+    fzec_results <- generate_CIs_FZEC_pred_scores(input_data = input_data,
+                                                   pred_scores_summary = pred_scores_summary,
+                                                   test_data_indices = test_data_indices,
+                                                   jags_parameters = jags_parameters,
+                                                   model_results = model_output,
+                                                   config = config)
+    write.csv(fzec_results$ci_fzec_results, file.path(output_dirs$more_results, "pred_scores_CIs_FZEC.csv"), row.names = FALSE)
+    fzec_results
 }, error = function(e) {
     stop("Error generating FZEC summary: ", conditionMessage(e))
 })
 
 zoonotic_frac_summary <- tryCatch({
     print("Generating zoonotic fraction summary...")
-    generate_zoonotic_frac_summary(ci_fzec_results = ci_fzec_return_list$ci_fzec_results,
-                                   animal_prob_mcmc = ci_fzec_return_list$animal_prob_mcmc,
-                                   results_dir = output_dirs$more_results)
+    zoonotic_summary <- generate_zoonotic_frac_summary(ci_fzec_results = ci_fzec_return_list$ci_fzec_results,
+                                                        animal_prob_mcmc = ci_fzec_return_list$animal_prob_mcmc)
+    write.csv(zoonotic_summary, file.path(output_dirs$more_results, "zoonotic_frac_summary.csv"), row.names = FALSE)
+    zoonotic_summary
 }, error = function(e) {
     stop("Error generating zoonotic fraction summary: ", conditionMessage(e))
 })
 
-#write csv infos
-write_csv_infos(input_data = input_data, config = config, temp_dir = output_dirs$temp)
 
+write_host_mappings(input_data = input_data, config = config, temp_dir = output_dirs$temp)
 print("Generating prediction score histograms...")
 #generate histograms for the prediction scores summary
 generate_histograms(pred_scores_summary = pred_scores_summary, plots_dir = output_dirs$plots)
 
+
 print("Analysis complete. Rendering report...")
 print(sprintf("Outputs: %s", output_dirs$root))
 end_time <- Sys.time()
-time_passed <- difftime(end_time, start_time, units = "mins")
+time_passed <- round(difftime(end_time, start_time, units = "mins"), digits = 2)
 time_message <- sprintf("Runtime: %.2f min", time_passed)
 print(time_message)
+write.csv(data.frame(time_passed = time_passed), file.path(output_dirs$temp, "runtime.csv"), row.names = FALSE)
 
 tryCatch(
     {

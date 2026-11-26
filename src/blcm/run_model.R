@@ -1,4 +1,4 @@
-run_model <- function(jags_parameters, config, model_file, temp_dir = NULL) {
+run_model <- function(jags_parameters, config, model_file) {
     #outputs results in a list of objects
     
     # Initialize 'a' with length M_fit (dispersed across chains so R-hat is informative) - Dan
@@ -16,7 +16,7 @@ run_model <- function(jags_parameters, config, model_file, temp_dir = NULL) {
                                n.burnin           = config$JAGS_DATA$burn_in,
                                n.thin             = config$JAGS_DATA$thin,
                                DIC                = FALSE)
-    model_output_size <- format(object.size(raw_model_output), units = "Mb")
+    model_output_size <- data.frame(size = format(object.size(raw_model_output), units = "Mb"))
     print(paste("model size:", model_output_size))
     
     model_results <- list(
@@ -25,13 +25,9 @@ run_model <- function(jags_parameters, config, model_file, temp_dir = NULL) {
                             pi_samples = raw_model_output$BUGSoutput$sims.list$pi,      # n_iter x M_fit
                             p_samples = raw_model_output$BUGSoutput$sims.list$p,        # n_iter x M_fit x K
                             eta_samples = raw_model_output$BUGSoutput$sims.list$eta,    # n_iter x N
-                            mcmc_object = coda::as.mcmc(raw_model_output)
+                            mcmc_object = coda::as.mcmc(raw_model_output),
+                            model_size = model_output_size
                         )
-    if (!is.null(temp_dir)) {
-        write.csv(model_results$bugs_summary_table,
-              file = file.path(temp_dir, "bugs_summary_table.csv"),
-              row.names = TRUE)
-    }
     return(model_results)
 }
 

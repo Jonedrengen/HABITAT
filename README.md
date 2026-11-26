@@ -115,7 +115,6 @@ LCA_v1/
 │   │   └── model.bug               # JAGS model
 │   ├── utils/
 │   │   ├── config_utils.R
-│   │   ├── logging.R
 │   │   └── write_output_dirs.R
 │   ├── run_bayesian.R              # entry point
 │   └── slurmarize.sh               # Slurm wrapper
@@ -126,8 +125,6 @@ LCA_v1/
 
 ```text
 output/
-├── logs/
-│   └── blcm.log
 ├── results/
 │   ├── pred_scores_raw.csv
 │   ├── pred_scores.csv
