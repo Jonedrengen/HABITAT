@@ -77,15 +77,15 @@ if (nrow(scores) > 0) {
 }
 ```
 
-### MGE features in test isolates
+### Feature presence in testing and training
 
 ```{r feature_counts}
-fc <- read_csv_return_df(file.path(temp_dir, "feature_counts.csv"))
-if (nrow(fc) > 0) {
-  knitr::kable(fc, caption = "`features in test samples`")
-} else {
-  warning("feature counts missing.")
-}
+test_fc <- read_csv_return_df(file.path(temp_dir, "test_feature_counts.csv"))
+train_fc <- read_csv_return_df(file.path(temp_dir, "training_feature_counts.csv"))
+merged_fc <- left_join(test_fc, train_fc, by = "feature")
+knitr::kable(merged_fc, 
+             caption = "`features counts and proportions`",
+             col.names = c("Feature", "test count", "test proportion", "train count", "train proportion"))
 ```
 
 ## Results

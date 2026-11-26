@@ -76,6 +76,7 @@ if (!is.null(config$JAGS_DATA$seed)) {
 print("Reading and validating input data...")
 raw_input_data <- read_data(input_file)
 input_data <- validate_data(raw_input_data, config)
+print("getting test and training indices")
 training_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 1)
 test_data_indices <- which(input_data[[config$DATA_META$training_column_name]] == 0)
 
@@ -106,12 +107,13 @@ jags_parameters <- tryCatch({
   stop("Error assembling JAGS data: ", conditionMessage(e))
 })
 
-#count features per column for test data
-feature_counts <- tryCatch({
+#count features per column for training and test data
+tryCatch({
     print("Counting features...")
-    counts <- count_feature_proportions(feature_matrix = jags_parameters$Y[test_data_indices, , drop = FALSE])
-    write.csv(counts, file.path(output_dirs$temp, "feature_counts.csv"), row.names = FALSE)
-    counts
+    training_features_counts <- count_feature_proportions(feature_matrix = jags_parameters$Y[training_data_indices, , drop = FALSE])
+    write.csv(training_features_counts, file.path(output_dirs$temp, "training_feature_counts.csv"), row.names = FALSE)
+    test_features_counts <- count_feature_proportions(feature_matrix = jags_parameters$Y[test_data_indices, , drop = FALSE])
+    write.csv(test_features_counts, file.path(output_dirs$temp, "test_feature_counts.csv"), row.names = FALSE)
 }, error = function(e) {
   stop("Error counting features: ", conditionMessage(e))
 })
